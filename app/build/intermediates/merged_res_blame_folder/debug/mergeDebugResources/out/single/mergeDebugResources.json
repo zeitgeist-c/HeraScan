@@ -1,0 +1,18 @@
+[
+    {
+        "merged": "com.seninadin.herascan.app-debug-60:/xml_backup_rules.xml.flat",
+        "source": "com.seninadin.herascan.app-main-62:/xml/backup_rules.xml"
+    },
+    {
+        "merged": "com.seninadin.herascan.app-debug-60:/drawable_logo.png.flat",
+        "source": "com.seninadin.herascan.app-main-62:/drawable/logo.png"
+    },
+    {
+        "merged": "com.seninadin.herascan.app-debug-60:/xml_data_extraction_rules.xml.flat",
+        "source": "com.seninadin.herascan.app-main-62:/xml/data_extraction_rules.xml"
+    },
+    {
+        "merged": "com.seninadin.herascan.app-debug-60:/xml_file_paths.xml.flat",
+        "source": "com.seninadin.herascan.app-main-62:/xml/file_paths.xml"
+    }
+]

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">HeraScan</string>
+    <string name="copy">Kopyala</string>
+    <string name="current_scan">Mevcut Tarama</string>
+    <string name="default_doc_name">Belge</string>
+    <string name="document_name">Belge Adı</string>
+    <string name="empty_state_desc">Yeni bir belge taramak için ekranın\nüzerindeki veya sağ alt köşedeki butonu kullanın.</string>
+    <string name="empty_state_title">Henüz Bir Belge Taranmadı</string>
+    <string name="error_occurred">Bir hata oluştu: %1$s</string>
+    <string name="extracted_text">Çıkarılan Metin</string>
+    <string name="history_scans">Geçmiş Taramalar</string>
+    <string name="new_scan">Yeni Tara</string>
+    <string name="new_scan_desc">Yeni Tarama</string>
+    <string name="page_number">Sayfa %1$d</string>
+    <string name="pdf_not_found">Paylaşılacak PDF bulunamadı.</string>
+    <string name="read_text">Metni Oku</string>
+    <string name="rename_document">Belgeyi İsimlendir</string>
+    <string name="save">Kaydet</string>
+    <string name="save_error">Kayıt Hatası: %1$s</string>
+    <string name="save_failed">Dosya kaydedilemedi.</string>
+    <string name="save_pdf">PDF Kaydet</string>
+    <string name="save_pdf_not_found">Kaydedilecek PDF bulunamadı.</string>
+    <string name="save_success">%1$s Belgeler klasörüne başarıyla kaydedildi.</string>
+    <string name="saved_default_name">Belge varsayılan isimle kaydedildi.</string>
+    <string name="saved_to_history">Belge geçmişe kaydedildi.</string>
+    <string name="scan_cancelled">Tarama iptal edildi.</string>
+    <string name="scanned_page">Taranan Sayfa %1$d</string>
+    <string name="scanner_failed">Tarayıcı başlatılamadı: %1$s</string>
+    <string name="share">Paylaş</string>
+    <string name="share_error">Paylaşım Hatası: %1$s</string>
+    <string name="share_file_chooser">Dosyayı Paylaş:</string>
+    <string name="share_image">Görsel Paylaş</string>
+    <string name="share_pdf">PDF Paylaş</string>
+    <string name="share_text_chooser">Metni Paylaş:</string>
+    <string name="text_copied">Metin panoya kopyalandı.</string>
+    <string name="text_not_found">Metin bulunamadı.</string>
+    <style name="Theme.HeraScan" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#FF6200EE</item>
+    </style>
+</resources>

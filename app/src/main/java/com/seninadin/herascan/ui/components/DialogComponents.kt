@@ -136,7 +136,6 @@ fun RenameDocumentDialog(uiState: ScanUiState, viewModel: MainViewModel, context
     AlertDialog(
         onDismissRequest = {
             viewModel.saveCurrentScanToHistory()
-            Toast.makeText(context, savedDefaultMsg, Toast.LENGTH_SHORT).show()
         },
         title = { Text(stringResource(R.string.rename_document), style = MaterialTheme.typography.titleMedium) },
         text = {
@@ -152,7 +151,6 @@ fun RenameDocumentDialog(uiState: ScanUiState, viewModel: MainViewModel, context
         confirmButton = {
             Button(onClick = {
                 viewModel.saveCurrentScanToHistory()
-                Toast.makeText(context, savedHistoryMsg, Toast.LENGTH_SHORT).show()
             }) {
                 Text(stringResource(R.string.save))
             }

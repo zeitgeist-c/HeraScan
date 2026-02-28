@@ -60,7 +60,11 @@ fun HistorySection(history: List<ScanHistory>, onDelete: (ScanHistory) -> Unit) 
                     ) {
                         if (scan.thumbnailUri != null) {
                             AsyncImage(
-                                model = Uri.parse(scan.thumbnailUri),
+                                model = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                                    .data(Uri.parse(scan.thumbnailUri))
+                                    .crossfade(true)
+                                    .size(200, 280) // Thumbnail boyutu için agresif downsampling
+                                    .build(),
                                 contentDescription = scan.title,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier.fillMaxSize()
@@ -104,8 +108,8 @@ fun HistorySection(history: List<ScanHistory>, onDelete: (ScanHistory) -> Unit) 
     if (scanToDelete != null) {
         AlertDialog(
             onDismissRequest = { scanToDelete = null },
-            title = { Text("Belgeyi Sil") },
-            text = { Text("'${scanToDelete?.title}' silinecek. Emin misiniz?") },
+            title = { Text(stringResource(R.string.delete_document)) },
+            text = { Text(stringResource(R.string.delete_document_confirm, scanToDelete?.title ?: "")) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -114,12 +118,12 @@ fun HistorySection(history: List<ScanHistory>, onDelete: (ScanHistory) -> Unit) 
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Sil")
+                    Text(stringResource(R.string.delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { scanToDelete = null }) {
-                    Text("İptal")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )

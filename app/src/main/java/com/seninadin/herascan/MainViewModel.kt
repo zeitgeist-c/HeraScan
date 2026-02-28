@@ -1,23 +1,18 @@
 package com.seninadin.herascan
 
-import android.content.Context
+import android.app.Application
 import android.net.Uri
-import android.widget.Toast
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.seninadin.herascan.data.ScanRepository
-import com.seninadin.herascan.db.ScanHistory
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.seninadin.herascan.data.ScanRepository
+import com.seninadin.herascan.db.ScanHistory
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -31,10 +26,21 @@ data class ScanUiState(
     val documentName: String = ""
 )
 
-class MainViewModel(private val repository: ScanRepository) : ViewModel() {
+sealed class ScanUiEvent {
+    data class ShowToast(val message: String) : ScanUiEvent()
+    data class ShowToastRes(val resId: Int) : ScanUiEvent()
+}
+
+class MainViewModel(
+    application: Application,
+    private val repository: ScanRepository
+) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(ScanUiState())
     val uiState: StateFlow<ScanUiState> = _uiState.asStateFlow()
+
+    private val _uiEvents = MutableSharedFlow<ScanUiEvent>()
+    val uiEvents = _uiEvents.asSharedFlow()
 
     val scanHistory = repository.allScans
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -62,9 +68,10 @@ class MainViewModel(private val repository: ScanRepository) : ViewModel() {
         _uiState.update { it.copy(showBottomSheet = false, extractedText = "") }
     }
 
-    fun extractTextFromImage(context: Context, imageUri: Uri) {
+    fun extractTextFromImage(imageUri: Uri) {
         viewModelScope.launch {
             _uiState.update { it.copy(isOcrLoading = true, extractedText = "") }
+            val context = getApplication<Application>()
             
             try {
                 val image = withContext(Dispatchers.IO) {
@@ -83,7 +90,9 @@ class MainViewModel(private val repository: ScanRepository) : ViewModel() {
                             )
                         }
                         if (visionText.text.isBlank()) {
-                            Toast.makeText(context, context.getString(R.string.text_not_found), Toast.LENGTH_SHORT).show()
+                            viewModelScope.launch {
+                                _uiEvents.emit(ScanUiEvent.ShowToastRes(R.string.text_not_found))
+                            }
                         }
                     }
                     .addOnFailureListener { e ->
@@ -123,6 +132,7 @@ class MainViewModel(private val repository: ScanRepository) : ViewModel() {
             
             withContext(Dispatchers.Main) {
                 dismissRenameDialog()
+                _uiEvents.emit(ScanUiEvent.ShowToastRes(R.string.saved_to_history))
             }
         }
     }
@@ -134,11 +144,14 @@ class MainViewModel(private val repository: ScanRepository) : ViewModel() {
     }
 }
 
-class MainViewModelFactory(private val repository: ScanRepository) : ViewModelProvider.Factory {
+class MainViewModelFactory(
+    private val application: Application,
+    private val repository: ScanRepository
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return MainViewModel(repository) as T
+            return MainViewModel(application, repository) as T
         }
         throw IllegalArgumentException("Bilinmeyen ViewModel sınıfı")
     }

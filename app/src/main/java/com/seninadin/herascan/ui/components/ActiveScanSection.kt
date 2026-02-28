@@ -24,8 +24,8 @@ import coil.compose.AsyncImage
 import com.seninadin.herascan.MainViewModel
 import com.seninadin.herascan.R
 import com.seninadin.herascan.ScanUiState
-import com.seninadin.herascan.savePdfToDevice
-import com.seninadin.herascan.shareFile
+import com.seninadin.herascan.utils.savePdfToDevice
+import com.seninadin.herascan.utils.shareFile
 import kotlinx.coroutines.CoroutineScope
 
 @Composable
@@ -56,7 +56,11 @@ fun ActiveScanSection(
                     modifier = Modifier.size(150.dp, 210.dp)
                 ) {
                     AsyncImage(
-                        model = uri,
+                        model = coil.request.ImageRequest.Builder(context)
+                            .data(uri)
+                            .crossfade(true)
+                            .size(300, 420) // Bellek için küçültülmüş render
+                            .build(),
                         contentDescription = stringResource(R.string.scanned_page, index + 1),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
@@ -91,8 +95,13 @@ fun ActiveScanSection(
             val pdfNotFoundMsg = stringResource(R.string.pdf_not_found)
             Button(
                 onClick = {
-                    uiState.pdfUri?.let { shareFile(context, scope, it, "application/pdf") }
-                        ?: Toast.makeText(context, pdfNotFoundMsg, Toast.LENGTH_SHORT).show()
+                    uiState.pdfUri?.let { uri ->
+                        scope.launch {
+                            shareFile(context, uri, "application/pdf")
+                                .onSuccess { intent -> context.startActivity(intent) }
+                                .onFailure { e -> Toast.makeText(context, context.getString(R.string.share_error, e.message), Toast.LENGTH_SHORT).show() }
+                        }
+                    } ?: Toast.makeText(context, pdfNotFoundMsg, Toast.LENGTH_SHORT).show()
                 },
                 modifier = Modifier.weight(1f).height(50.dp),
                 shape = RoundedCornerShape(12.dp)
@@ -103,7 +112,16 @@ fun ActiveScanSection(
             }
 
             Button(
-                onClick = { savePdfToDevice(context, scope, uiState.pdfUri) },
+                onClick = { 
+                    scope.launch {
+                        val result = savePdfToDevice(context, uiState.pdfUri)
+                        result.onSuccess { fileName ->
+                            Toast.makeText(context, context.getString(R.string.save_success, fileName), Toast.LENGTH_LONG).show()
+                        }.onFailure { e ->
+                            Toast.makeText(context, e.message ?: context.getString(R.string.save_failed), Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                },
                 modifier = Modifier.weight(1f).height(50.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
@@ -121,7 +139,11 @@ fun ActiveScanSection(
             OutlinedButton(
                 onClick = {
                     if (uiState.imageUris.isNotEmpty()) {
-                        shareFile(context, scope, uiState.imageUris.first(), "image/jpeg")
+                        scope.launch {
+                            shareFile(context, uiState.imageUris.first(), "image/jpeg")
+                                .onSuccess { intent -> context.startActivity(intent) }
+                                .onFailure { e -> Toast.makeText(context, context.getString(R.string.share_error, e.message), Toast.LENGTH_SHORT).show() }
+                        }
                     }
                 },
                 modifier = Modifier.weight(1f).height(50.dp),
@@ -135,7 +157,7 @@ fun ActiveScanSection(
             OutlinedButton(
                 onClick = {
                     uiState.imageUris.firstOrNull()?.let {
-                        viewModel.extractTextFromImage(context, it)
+                        viewModel.extractTextFromImage(it)
                     }
                 },
                 modifier = Modifier.weight(1f).height(50.dp),

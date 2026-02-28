@@ -35,4 +35,8 @@
     <string name="default_doc_name">Belge</string>
     <string name="text_not_found">Metin bulunamadı.</string>
     <string name="error_occurred">Bir hata oluştu: %1$s</string>
+    <string name="delete_document">Belgeyi Sil</string>
+    <string name="delete_document_confirm">\'%1$s\' silinecek. Emin misiniz?</string>
+    <string name="delete">Sil</string>
+    <string name="cancel">İptal</string>
 </resources>

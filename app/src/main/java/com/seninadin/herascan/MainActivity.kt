@@ -1,14 +1,7 @@
 package com.seninadin.herascan
 
 import android.app.Activity
-import android.content.ContentValues
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.os.Environment
-import android.provider.MediaStore
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -41,8 +34,7 @@ import com.seninadin.herascan.ui.theme.HeraScanTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.FileOutputStream
+import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -66,13 +58,26 @@ fun HeraScanApp() {
     // Repository ve ViewModel Kurulumu
     val dao = remember { HeraScanDatabase.getDatabase(context.applicationContext).scanHistoryDao() }
     val repository = remember { ScanRepository(dao) }
-    val viewModel: MainViewModel = viewModel(factory = MainViewModelFactory(repository))
+    val viewModel: MainViewModel = viewModel(factory = MainViewModelFactory(context.applicationContext as android.app.Application, repository))
     
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val history by viewModel.scanHistory.collectAsStateWithLifecycle()
     
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(viewModel.uiEvents) {
+        viewModel.uiEvents.collect { event ->
+            when (event) {
+                is ScanUiEvent.ShowToast -> {
+                    Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                }
+                is ScanUiEvent.ShowToastRes -> {
+                    Toast.makeText(context, context.getString(event.resId), Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
 
     val scannerOptions = remember {
         GmsDocumentScannerOptions.Builder()
@@ -126,13 +131,16 @@ fun HeraScanApp() {
             val failMsg = stringResource(R.string.scanner_failed)
             ExtendedFloatingActionButton(
                 onClick = {
-                    scanner.getStartScanIntent(context as Activity)
-                        .addOnSuccessListener { intentSender ->
+                    scope.launch {
+                        try {
+                            val intentSender = withContext(Dispatchers.IO) {
+                                kotlinx.coroutines.tasks.await(scanner.getStartScanIntent(context as Activity))
+                            }
                             scanLauncher.launch(IntentSenderRequest.Builder(intentSender).build())
-                        }
-                        .addOnFailureListener { e ->
+                        } catch (e: Exception) {
                             Toast.makeText(context, String.format(failMsg, e.message), Toast.LENGTH_LONG).show()
                         }
+                    }
                 },
                 icon = { Icon(Icons.Default.AddPhotoAlternate, contentDescription = stringResource(R.string.new_scan_desc)) },
                 text = { Text(stringResource(R.string.new_scan), fontWeight = FontWeight.SemiBold) },
@@ -175,90 +183,6 @@ fun HeraScanApp() {
         
         if (uiState.showRenameDialog) {
             RenameDocumentDialog(uiState, viewModel, context)
-        }
-    }
-}
-
-// ------ YARDIMCI GÖREV FONKSİYONLARI (Kapsam dışına çıkmaması için burada kaldılar) ------
-
-fun shareFile(context: Context, scope: kotlinx.coroutines.CoroutineScope, uri: Uri, mimeType: String) {
-    scope.launch {
-        try {
-            val extension = if (mimeType == "application/pdf") ".pdf" else ".jpg"
-            val folderName = if (mimeType == "application/pdf") "pdfs" else "images"
-            
-            val providerUri = withContext(Dispatchers.IO) {
-                val tempFolder = File(context.cacheDir, folderName)
-                if (!tempFolder.exists()) tempFolder.mkdirs()
-
-                val tempFile = File(tempFolder, "share_temp_${System.currentTimeMillis()}$extension")
-                
-                context.contentResolver.openInputStream(uri)?.use { input ->
-                    FileOutputStream(tempFile).use { output ->
-                        input.copyTo(output)
-                    }
-                }
-
-                FileProvider.getUriForFile(
-                    context,
-                    "${context.applicationContext.packageName}.fileprovider",
-                    tempFile
-                )
-            }
-
-            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                type = mimeType
-                putExtra(Intent.EXTRA_STREAM, providerUri)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-            context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.share_file_chooser)))
-            
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(context, context.getString(R.string.share_error, e.message.toString()), Toast.LENGTH_SHORT).show()
-        }
-    }
-}
-
-fun savePdfToDevice(context: Context, scope: kotlinx.coroutines.CoroutineScope, sourceUri: Uri?) {
-    if (sourceUri == null) {
-        Toast.makeText(context, context.getString(R.string.save_pdf_not_found), Toast.LENGTH_SHORT).show()
-        return
-    }
-
-    scope.launch {
-        try {
-            val fileName = "HeraScan_${System.currentTimeMillis()}.pdf"
-            val resolver = context.contentResolver
-            
-            val contentValues = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-                put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS + "/HeraScan")
-                }
-            }
-
-            val isSuccess = withContext(Dispatchers.IO) {
-                val uri = resolver.insert(MediaStore.Files.getContentUri("external"), contentValues)
-                if (uri != null) {
-                    resolver.openOutputStream(uri)?.use { outputStream ->
-                        resolver.openInputStream(sourceUri)?.use { inputStream ->
-                            inputStream.copyTo(outputStream)
-                        }
-                    }
-                    true
-                } else false
-            }
-
-            if (isSuccess) {
-                Toast.makeText(context, context.getString(R.string.save_success, fileName), Toast.LENGTH_LONG).show()
-            } else {
-                Toast.makeText(context, context.getString(R.string.save_failed), Toast.LENGTH_SHORT).show()
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(context, context.getString(R.string.save_error, e.message.toString()), Toast.LENGTH_SHORT).show()
         }
     }
 }

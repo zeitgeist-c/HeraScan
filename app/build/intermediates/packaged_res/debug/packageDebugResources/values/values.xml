@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">HeraScan</string>
+    <string name="cancel">İptal</string>
     <string name="copy">Kopyala</string>
     <string name="current_scan">Mevcut Tarama</string>
     <string name="default_doc_name">Belge</string>
+    <string name="delete">Sil</string>
+    <string name="delete_document">Belgeyi Sil</string>
+    <string name="delete_document_confirm">\'%1$s\' silinecek. Emin misiniz?</string>
     <string name="document_name">Belge Adı</string>
     <string name="empty_state_desc">Yeni bir belge taramak için ekranın\nüzerindeki veya sağ alt köşedeki butonu kullanın.</string>
     <string name="empty_state_title">Henüz Bir Belge Taranmadı</string>

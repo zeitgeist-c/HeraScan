@@ -2,9 +2,13 @@ R_DEF: Internal format may change without notice
 local
 drawable logo
 string app_name
+string cancel
 string copy
 string current_scan
 string default_doc_name
+string delete
+string delete_document
+string delete_document_confirm
 string document_name
 string empty_state_desc
 string empty_state_title

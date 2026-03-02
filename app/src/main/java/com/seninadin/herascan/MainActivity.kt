@@ -134,7 +134,7 @@ fun HeraScanApp() {
                     scope.launch {
                         try {
                             val intentSender = withContext(Dispatchers.IO) {
-                                kotlinx.coroutines.tasks.await(scanner.getStartScanIntent(context as Activity))
+                                scanner.getStartScanIntent(context as Activity).await()
                             }
                             scanLauncher.launch(IntentSenderRequest.Builder(intentSender).build())
                         } catch (e: Exception) {

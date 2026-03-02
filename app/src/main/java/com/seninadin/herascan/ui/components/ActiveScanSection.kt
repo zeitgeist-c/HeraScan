@@ -27,6 +27,7 @@ import com.seninadin.herascan.ScanUiState
 import com.seninadin.herascan.utils.savePdfToDevice
 import com.seninadin.herascan.utils.shareFile
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 @Composable
 fun ActiveScanSection(
@@ -97,9 +98,16 @@ fun ActiveScanSection(
                 onClick = {
                     uiState.pdfUri?.let { uri ->
                         scope.launch {
-                            shareFile(context, uri, "application/pdf")
-                                .onSuccess { intent -> context.startActivity(intent) }
-                                .onFailure { e -> Toast.makeText(context, context.getString(R.string.share_error, e.message), Toast.LENGTH_SHORT).show() }
+                            val result = shareFile(context, uri, "application/pdf")
+                            if (result.isSuccess) {
+                                val intent = result.getOrNull()
+                                if (intent != null) {
+                                    context.startActivity(intent)
+                                }
+                            } else {
+                                val error = result.exceptionOrNull()?.message
+                                Toast.makeText(context, context.getString(R.string.share_error, error), Toast.LENGTH_SHORT).show()
+                            }
                         }
                     } ?: Toast.makeText(context, pdfNotFoundMsg, Toast.LENGTH_SHORT).show()
                 },
@@ -115,10 +123,12 @@ fun ActiveScanSection(
                 onClick = { 
                     scope.launch {
                         val result = savePdfToDevice(context, uiState.pdfUri)
-                        result.onSuccess { fileName ->
+                        if (result.isSuccess) {
+                            val fileName = result.getOrNull()
                             Toast.makeText(context, context.getString(R.string.save_success, fileName), Toast.LENGTH_LONG).show()
-                        }.onFailure { e ->
-                            Toast.makeText(context, e.message ?: context.getString(R.string.save_failed), Toast.LENGTH_SHORT).show()
+                        } else {
+                            val error = result.exceptionOrNull()?.message
+                            Toast.makeText(context, error ?: context.getString(R.string.save_failed), Toast.LENGTH_SHORT).show()
                         }
                     }
                 },
@@ -140,9 +150,16 @@ fun ActiveScanSection(
                 onClick = {
                     if (uiState.imageUris.isNotEmpty()) {
                         scope.launch {
-                            shareFile(context, uiState.imageUris.first(), "image/jpeg")
-                                .onSuccess { intent -> context.startActivity(intent) }
-                                .onFailure { e -> Toast.makeText(context, context.getString(R.string.share_error, e.message), Toast.LENGTH_SHORT).show() }
+                            val result = shareFile(context, uiState.imageUris.first(), "image/jpeg")
+                            if (result.isSuccess) {
+                                val intent = result.getOrNull()
+                                if (intent != null) {
+                                    context.startActivity(intent)
+                                }
+                            } else {
+                                val error = result.exceptionOrNull()?.message
+                                Toast.makeText(context, context.getString(R.string.share_error, error), Toast.LENGTH_SHORT).show()
+                            }
                         }
                     }
                 },

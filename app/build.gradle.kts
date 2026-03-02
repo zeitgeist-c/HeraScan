@@ -65,6 +65,7 @@ dependencies {
 
     // ML Kit Document Scanner
     implementation("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0-beta1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
     // Text Recognition
     implementation("com.google.mlkit:text-recognition:16.0.1")

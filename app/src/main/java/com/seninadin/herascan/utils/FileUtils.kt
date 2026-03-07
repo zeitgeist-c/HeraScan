@@ -16,6 +16,41 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.util.concurrent.TimeUnit
+
+private const val TEMP_FILE_MAX_AGE_HOURS = 24L
+
+fun cleanupTempFiles(context: Context) {
+    CoroutineScope(Dispatchers.IO).launch {
+        val pdfFolder = File(context.cacheDir, "pdfs")
+        val imagesFolder = File(context.cacheDir, "images")
+        
+        val folders = listOf(pdfFolder, imagesFolder).filter { it.exists() }
+        val maxAgeMillis = TimeUnit.HOURS.toMillis(TEMP_FILE_MAX_AGE_HOURS)
+        val now = System.currentTimeMillis()
+        
+        folders.forEach { folder ->
+            folder.listFiles()?.forEach { file ->
+                if (now - file.lastModified() > maxAgeMillis) {
+                    file.delete()
+                }
+            }
+        }
+    }
+}
+
+fun clearAllTempFiles(context: Context) {
+    CoroutineScope(Dispatchers.IO).launch {
+        val pdfFolder = File(context.cacheDir, "pdfs")
+        val imagesFolder = File(context.cacheDir, "images")
+        
+        listOf(pdfFolder, imagesFolder).forEach { folder ->
+            if (folder.exists()) {
+                folder.deleteRecursively()
+            }
+        }
+    }
+}
 
 /**
  * Dosya paylaşımı için geçici bir URI oluşturur ve Paylaşım Intent'i döner.

@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.seninadin.herascan.app-mergeDebugResources-58:/values-ta/values-ta.xml",
+            "outputFile": "com.seninadin.herascan.app-mergeDebugResources-64:/values-ta/values-ta.xml",
             "map": [
                 {
                     "source": "C:\\Users\\user\\.gradle\\caches\\transforms-4\\cdbb1ba781035f4df9a53fae280e2b12\\transformed\\ui-release\\res\\values-ta\\values-ta.xml",

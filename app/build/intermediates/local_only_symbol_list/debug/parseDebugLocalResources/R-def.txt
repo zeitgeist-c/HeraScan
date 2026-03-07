@@ -2,6 +2,7 @@ R_DEF: Internal format may change without notice
 local
 drawable logo
 string app_name
+string back
 string cancel
 string copy
 string current_scan
@@ -14,11 +15,16 @@ string empty_state_desc
 string empty_state_title
 string error_occurred
 string extracted_text
+string extracting_all
+string extracting_text
 string history_scans
 string new_scan
 string new_scan_desc
 string page_number
+string pages
 string pdf_not_found
+string pdf_viewer
+string read_all_pages
 string read_text
 string rename_document
 string save
@@ -40,6 +46,7 @@ string share_pdf
 string share_text_chooser
 string text_copied
 string text_not_found
+string view_pdf
 style Theme.HeraScan
 xml backup_rules
 xml data_extraction_rules

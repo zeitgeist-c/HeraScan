@@ -1,5 +1,6 @@
 package com.seninadin.herascan.db
 
+import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
@@ -15,7 +16,9 @@ interface ScanHistoryDao {
     @Delete
     suspend fun deleteScan(scanHistory: ScanHistory)
 
-    // Tüm geçmişi tarihe göre (en yenisi en üstte) Flow ile dinlemek için
     @Query("SELECT * FROM scan_history ORDER BY dateMillis DESC")
     fun getAllScans(): Flow<List<ScanHistory>>
+
+    @Query("SELECT * FROM scan_history ORDER BY dateMillis DESC")
+    fun getScansPagingSource(): PagingSource<Int, ScanHistory>
 }

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">HeraScan</string>
+    <string name="back">Geri</string>
     <string name="cancel">İptal</string>
     <string name="copy">Kopyala</string>
     <string name="current_scan">Mevcut Tarama</string>
@@ -13,11 +14,16 @@
     <string name="empty_state_title">Henüz Bir Belge Taranmadı</string>
     <string name="error_occurred">Bir hata oluştu: %1$s</string>
     <string name="extracted_text">Çıkarılan Metin</string>
+    <string name="extracting_all">Tüm sayfalar okunuyor</string>
+    <string name="extracting_text">Metin çıkarılıyor…</string>
     <string name="history_scans">Geçmiş Taramalar</string>
     <string name="new_scan">Yeni Tara</string>
     <string name="new_scan_desc">Yeni Tarama</string>
     <string name="page_number">Sayfa %1$d</string>
+    <string name="pages">sayfa</string>
     <string name="pdf_not_found">Paylaşılacak PDF bulunamadı.</string>
+    <string name="pdf_viewer">PDF Görüntüleyici</string>
+    <string name="read_all_pages">Tüm %1$d Sayfayı Oku</string>
     <string name="read_text">Metni Oku</string>
     <string name="rename_document">Belgeyi İsimlendir</string>
     <string name="save">Kaydet</string>
@@ -39,6 +45,7 @@
     <string name="share_text_chooser">Metni Paylaş:</string>
     <string name="text_copied">Metin panoya kopyalandı.</string>
     <string name="text_not_found">Metin bulunamadı.</string>
+    <string name="view_pdf">PDF Görüntüle</string>
     <style name="Theme.HeraScan" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:statusBarColor">#FF6200EE</item>
     </style>

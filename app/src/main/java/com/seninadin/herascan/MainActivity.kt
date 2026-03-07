@@ -31,6 +31,9 @@ import com.seninadin.herascan.data.ScanRepository
 import com.seninadin.herascan.db.HeraScanDatabase
 import com.seninadin.herascan.ui.components.*
 import com.seninadin.herascan.ui.theme.HeraScanTheme
+import com.seninadin.herascan.utils.cleanupTempFiles
+import com.seninadin.herascan.utils.savePdfToDevice
+import com.seninadin.herascan.utils.shareFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -54,6 +57,10 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun HeraScanApp() {
     val context = LocalContext.current
+    
+    LaunchedEffect(Unit) {
+        cleanupTempFiles(context)
+    }
     
     // Repository ve ViewModel Kurulumu
     val dao = remember { HeraScanDatabase.getDatabase(context.applicationContext).scanHistoryDao() }
@@ -183,6 +190,13 @@ fun HeraScanApp() {
         
         if (uiState.showRenameDialog) {
             RenameDocumentDialog(uiState, viewModel, context)
+        }
+
+        if (uiState.showPdfViewer) {
+            PdfViewerScreen(
+                pdfUri = uiState.pdfUri,
+                onClose = { viewModel.dismissPdfViewer() }
+            )
         }
     }
 }

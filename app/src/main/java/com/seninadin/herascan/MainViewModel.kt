@@ -6,6 +6,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
@@ -14,15 +16,21 @@ import com.seninadin.herascan.db.ScanHistory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 data class ScanUiState(
     val imageUris: List<Uri> = emptyList(),
     val pdfUri: Uri? = null,
     val extractedText: String = "",
     val isOcrLoading: Boolean = false,
+    val ocrProgress: Int = 0,
+    val ocrTotal: Int = 0,
     val showBottomSheet: Boolean = false,
     val showRenameDialog: Boolean = false,
+    val showPdfViewer: Boolean = false,
     val documentName: String = ""
 )
 
@@ -36,6 +44,10 @@ class MainViewModel(
     private val repository: ScanRepository
 ) : AndroidViewModel(application) {
 
+    private val textRecognizer by lazy {
+        TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+    }
+
     private val _uiState = MutableStateFlow(ScanUiState())
     val uiState: StateFlow<ScanUiState> = _uiState.asStateFlow()
 
@@ -44,6 +56,9 @@ class MainViewModel(
 
     val scanHistory = repository.allScans
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val pagedScans: Flow<PagingData<ScanHistory>> = repository.getScansPaged()
+        .cachedIn(viewModelScope)
 
     fun updateScanResults(images: List<Uri>, pdf: Uri?, defaultName: String) {
         _uiState.update { 
@@ -68,9 +83,17 @@ class MainViewModel(
         _uiState.update { it.copy(showBottomSheet = false, extractedText = "") }
     }
 
+    fun showPdfViewer() {
+        _uiState.update { it.copy(showPdfViewer = true) }
+    }
+
+    fun dismissPdfViewer() {
+        _uiState.update { it.copy(showPdfViewer = false) }
+    }
+
     fun extractTextFromImage(imageUri: Uri) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isOcrLoading = true, extractedText = "") }
+            _uiState.update { it.copy(isOcrLoading = true, extractedText = "", ocrProgress = 0, ocrTotal = 1) }
             val context = getApplication<Application>()
             
             try {
@@ -78,32 +101,87 @@ class MainViewModel(
                     InputImage.fromFilePath(context, imageUri)
                 }
                 
-                val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+                val result = suspendCancellableCoroutine<String> { continuation ->
+                    textRecognizer.process(image)
+                        .addOnSuccessListener { visionText ->
+                            continuation.resume(visionText.text)
+                        }
+                        .addOnFailureListener { e ->
+                            continuation.resumeWithException(e)
+                        }
+                }
                 
-                recognizer.process(image)
-                    .addOnSuccessListener { visionText ->
-                        _uiState.update { 
-                            it.copy(
-                                extractedText = visionText.text,
-                                isOcrLoading = false,
-                                showBottomSheet = visionText.text.isNotBlank()
-                            )
+                _uiState.update { 
+                    it.copy(
+                        extractedText = result,
+                        isOcrLoading = false,
+                        showBottomSheet = result.isNotBlank()
+                    )
+                }
+                if (result.isBlank()) {
+                    _uiEvents.emit(ScanUiEvent.ShowToastRes(R.string.text_not_found))
+                }
+                
+            } catch (e: Exception) {
+                _uiState.update { 
+                    it.copy(
+                        extractedText = context.getString(R.string.error_occurred, e.message.toString()),
+                        isOcrLoading = false,
+                        showBottomSheet = true
+                    )
+                }
+            }
+        }
+    }
+
+    fun extractTextFromAllImages() {
+        val imageUris = _uiState.value.imageUris
+        if (imageUris.isEmpty()) return
+        
+        viewModelScope.launch {
+            _uiState.update { it.copy(isOcrLoading = true, extractedText = "", ocrProgress = 0, ocrTotal = imageUris.size) }
+            val context = getApplication<Application>()
+            
+            try {
+                val results = mutableListOf<String>()
+                
+                imageUris.forEachIndexed { index, uri ->
+                    try {
+                        val image = withContext(Dispatchers.IO) {
+                            InputImage.fromFilePath(context, uri)
                         }
-                        if (visionText.text.isBlank()) {
-                            viewModelScope.launch {
-                                _uiEvents.emit(ScanUiEvent.ShowToastRes(R.string.text_not_found))
-                            }
+                        
+                        val result = suspendCancellableCoroutine<String> { continuation ->
+                            textRecognizer.process(image)
+                                .addOnSuccessListener { visionText ->
+                                    continuation.resume(visionText.text)
+                                }
+                                .addOnFailureListener { e ->
+                                    continuation.resumeWithException(e)
+                                }
                         }
+                        
+                        results.add(result)
+                        _uiState.update { it.copy(ocrProgress = index + 1) }
+                        
+                    } catch (e: Exception) {
+                        results.add("")
                     }
-                    .addOnFailureListener { e ->
-                        _uiState.update { 
-                            it.copy(
-                                extractedText = context.getString(R.string.error_occurred, e.message.toString()),
-                                isOcrLoading = false,
-                                showBottomSheet = true
-                            )
-                        }
-                    }
+                }
+                
+                val combinedText = results.filter { it.isNotBlank() }.joinToString("\n\n---\n\n")
+                
+                _uiState.update { 
+                    it.copy(
+                        extractedText = combinedText,
+                        isOcrLoading = false,
+                        showBottomSheet = combinedText.isNotBlank()
+                    )
+                }
+                
+                if (combinedText.isBlank()) {
+                    _uiEvents.emit(ScanUiEvent.ShowToastRes(R.string.text_not_found))
+                }
                 
             } catch (e: Exception) {
                 _uiState.update { 
@@ -141,6 +219,11 @@ class MainViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             repository.delete(scan)
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        textRecognizer.close()
     }
 }
 

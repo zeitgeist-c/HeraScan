@@ -34,9 +34,16 @@
     <string name="save_error">Kayıt Hatası: %1$s</string>
     <string name="default_doc_name">Belge</string>
     <string name="text_not_found">Metin bulunamadı.</string>
+    <string name="extracting_text">Metin çıkarılıyor…</string>
+    <string name="extracting_all">Tüm sayfalar okunuyor</string>
+    <string name="read_all_pages">Tüm %1$d Sayfayı Oku</string>
     <string name="error_occurred">Bir hata oluştu: %1$s</string>
     <string name="delete_document">Belgeyi Sil</string>
     <string name="delete_document_confirm">\'%1$s\' silinecek. Emin misiniz?</string>
     <string name="delete">Sil</string>
     <string name="cancel">İptal</string>
+    <string name="pdf_viewer">PDF Görüntüleyici</string>
+    <string name="back">Geri</string>
+    <string name="pages">sayfa</string>
+    <string name="view_pdf">PDF Görüntüle</string>
 </resources>

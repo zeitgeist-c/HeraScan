@@ -4,6 +4,7 @@
     <attr format="dimension" name="height"/>
     <attr format="boolean" name="isLightTheme"/>
     <attr format="reference" name="nestedScrollViewStyle"/>
+    <attr format="reference" name="recyclerViewStyle"/>
     <attr format="string" name="title"/>
     <bool name="abc_action_bar_embed_tabs">true</bool>
     <bool name="abc_config_actionMenuItemAllCaps">true</bool>
@@ -172,6 +173,9 @@
     <dimen name="compat_notification_large_icon_max_width">320dp</dimen>
     <item format="float" name="disabled_alpha_material_dark" type="dimen">0.30</item>
     <item format="float" name="disabled_alpha_material_light" type="dimen">0.26</item>
+    <dimen name="fastscroll_default_thickness">8dp</dimen>
+    <dimen name="fastscroll_margin">0dp</dimen>
+    <dimen name="fastscroll_minimum_range">50dp</dimen>
     <item format="float" name="highlight_alpha_material_colored" type="dimen">0.26</item>
     <item format="float" name="highlight_alpha_material_dark" type="dimen">0.20</item>
     <item format="float" name="highlight_alpha_material_light" type="dimen">0.12</item>
@@ -179,6 +183,9 @@
     <item format="float" name="hint_alpha_material_light" type="dimen">0.38</item>
     <item format="float" name="hint_pressed_alpha_material_dark" type="dimen">0.70</item>
     <item format="float" name="hint_pressed_alpha_material_light" type="dimen">0.54</item>
+    <dimen name="item_touch_helper_max_drag_scroll_per_frame">20dp</dimen>
+    <dimen name="item_touch_helper_swipe_escape_max_velocity">800dp</dimen>
+    <dimen name="item_touch_helper_swipe_escape_velocity">120dp</dimen>
     <dimen name="notification_action_icon_size">32dp</dimen>
     <dimen name="notification_action_text_size">13sp</dimen>
     <dimen name="notification_big_circle_margin">12dp</dimen>
@@ -250,6 +257,7 @@
     <item name="home" type="id"/>
     <item name="inspection_slot_table_set" type="id"/>
     <item name="is_pooling_container_tag" type="id"/>
+    <item name="item_touch_helper_previous_elevation" type="id"/>
     <item name="line1" type="id"/>
     <item name="line3" type="id"/>
     <item name="pooling_container_listener_holder_tag" type="id"/>
@@ -316,6 +324,7 @@
     <string name="abc_toolbar_collapse_description">Collapse</string>
     <string name="androidx_startup" translatable="false">androidx.startup</string>
     <string name="app_name">HeraScan</string>
+    <string name="back">Geri</string>
     <string name="bottom_sheet_collapse_description">Collapse bottom sheet</string>
     <string name="bottom_sheet_dismiss_description">Dismiss bottom sheet</string>
     <string name="bottom_sheet_drag_handle_description">Drag handle</string>
@@ -400,6 +409,8 @@
     <string name="error_occurred">Bir hata oluştu: %1$s</string>
     <string name="expanded">Expanded</string>
     <string name="extracted_text">Çıkarılan Metin</string>
+    <string name="extracting_all">Tüm sayfalar okunuyor</string>
+    <string name="extracting_text">Metin çıkarılıyor…</string>
     <string name="history_scans">Geçmiş Taramalar</string>
     <string name="in_progress">In progress</string>
     <string name="indeterminate">Partially checked</string>
@@ -411,9 +422,12 @@
     <string name="off">Off</string>
     <string name="on">On</string>
     <string name="page_number">Sayfa %1$d</string>
+    <string name="pages">sayfa</string>
     <string name="pdf_not_found">Paylaşılacak PDF bulunamadı.</string>
+    <string name="pdf_viewer">PDF Görüntüleyici</string>
     <string name="range_end">"Range end"</string>
     <string name="range_start">"Range start"</string>
+    <string name="read_all_pages">Tüm %1$d Sayfayı Oku</string>
     <string name="read_text">Metni Oku</string>
     <string name="rename_document">Belgeyi İsimlendir</string>
     <string name="save">Kaydet</string>
@@ -458,6 +472,7 @@
     <string name="time_picker_pm">PM</string>
     <string name="tooltip_long_press_label">Show tooltip</string>
     <string name="tooltip_pane_description">Tooltip</string>
+    <string name="view_pdf">PDF Görüntüle</string>
     <style name="AlertDialog.AppCompat" parent="Base.AlertDialog.AppCompat"/>
     <style name="AlertDialog.AppCompat.Light" parent="Base.AlertDialog.AppCompat.Light"/>
     <style name="Animation.AppCompat.Dialog" parent="Base.Animation.AppCompat.Dialog"/>
@@ -3052,6 +3067,27 @@
         <attr format="dimension" name="paddingBottomNoButtons"/>
         
         <attr format="dimension" name="paddingTopNoTitle"/>
+    </declare-styleable>
+    <declare-styleable name="RecyclerView">
+        
+        <attr format="string" name="layoutManager"/>
+
+        
+        
+        
+        <eat-comment/>
+
+        <attr name="android:orientation"/>
+        <attr name="android:descendantFocusability"/>
+        <attr name="android:clipToPadding"/>
+        <attr format="integer" name="spanCount"/>
+        <attr format="boolean" name="reverseLayout"/>
+        <attr format="boolean" name="stackFromEnd"/>
+        <attr format="boolean" name="fastScrollEnabled"/>
+        <attr format="reference" name="fastScrollVerticalThumbDrawable"/>
+        <attr format="reference" name="fastScrollVerticalTrackDrawable"/>
+        <attr format="reference" name="fastScrollHorizontalThumbDrawable"/>
+        <attr format="reference" name="fastScrollHorizontalTrackDrawable"/>
     </declare-styleable>
     <declare-styleable name="SearchView">
         

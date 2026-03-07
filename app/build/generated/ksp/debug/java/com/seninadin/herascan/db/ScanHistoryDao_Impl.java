@@ -2,16 +2,19 @@ package com.seninadin.herascan.db;
 
 import android.database.Cursor;
 import androidx.annotation.NonNull;
+import androidx.paging.PagingSource;
 import androidx.room.CoroutinesRoom;
 import androidx.room.EntityDeletionOrUpdateAdapter;
 import androidx.room.EntityInsertionAdapter;
 import androidx.room.RoomDatabase;
 import androidx.room.RoomSQLiteQuery;
+import androidx.room.paging.LimitOffsetPagingSource;
 import androidx.room.util.CursorUtil;
 import androidx.room.util.DBUtil;
 import androidx.sqlite.db.SupportSQLiteStatement;
 import java.lang.Class;
 import java.lang.Exception;
+import java.lang.Integer;
 import java.lang.Object;
 import java.lang.Override;
 import java.lang.String;
@@ -164,6 +167,48 @@ public final class ScanHistoryDao_Impl implements ScanHistoryDao {
         _statement.release();
       }
     });
+  }
+
+  @Override
+  public PagingSource<Integer, ScanHistory> getScansPagingSource() {
+    final String _sql = "SELECT * FROM scan_history ORDER BY dateMillis DESC";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
+    return new LimitOffsetPagingSource<ScanHistory>(_statement, __db, "scan_history") {
+      @Override
+      @NonNull
+      protected List<ScanHistory> convertRows(@NonNull final Cursor cursor) {
+        final int _cursorIndexOfId = CursorUtil.getColumnIndexOrThrow(cursor, "id");
+        final int _cursorIndexOfTitle = CursorUtil.getColumnIndexOrThrow(cursor, "title");
+        final int _cursorIndexOfDateMillis = CursorUtil.getColumnIndexOrThrow(cursor, "dateMillis");
+        final int _cursorIndexOfPdfUri = CursorUtil.getColumnIndexOrThrow(cursor, "pdfUri");
+        final int _cursorIndexOfThumbnailUri = CursorUtil.getColumnIndexOrThrow(cursor, "thumbnailUri");
+        final List<ScanHistory> _result = new ArrayList<ScanHistory>(cursor.getCount());
+        while (cursor.moveToNext()) {
+          final ScanHistory _item;
+          final long _tmpId;
+          _tmpId = cursor.getLong(_cursorIndexOfId);
+          final String _tmpTitle;
+          _tmpTitle = cursor.getString(_cursorIndexOfTitle);
+          final long _tmpDateMillis;
+          _tmpDateMillis = cursor.getLong(_cursorIndexOfDateMillis);
+          final String _tmpPdfUri;
+          if (cursor.isNull(_cursorIndexOfPdfUri)) {
+            _tmpPdfUri = null;
+          } else {
+            _tmpPdfUri = cursor.getString(_cursorIndexOfPdfUri);
+          }
+          final String _tmpThumbnailUri;
+          if (cursor.isNull(_cursorIndexOfThumbnailUri)) {
+            _tmpThumbnailUri = null;
+          } else {
+            _tmpThumbnailUri = cursor.getString(_cursorIndexOfThumbnailUri);
+          }
+          _item = new ScanHistory(_tmpId,_tmpTitle,_tmpDateMillis,_tmpPdfUri,_tmpThumbnailUri);
+          _result.add(_item);
+        }
+        return _result;
+      }
+    };
   }
 
   @NonNull

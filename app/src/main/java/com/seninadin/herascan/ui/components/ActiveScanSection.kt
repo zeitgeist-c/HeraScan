@@ -10,6 +10,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.TextSnippet
 import androidx.compose.material3.*
@@ -140,6 +142,18 @@ fun ActiveScanSection(
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.save_pdf))
             }
+
+            if (uiState.pdfUri != null) {
+                OutlinedButton(
+                    onClick = { viewModel.showPdfViewer() },
+                    modifier = Modifier.weight(1f).height(50.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.view_pdf))
+                }
+            }
         }
 
         Row(
@@ -178,14 +192,45 @@ fun ActiveScanSection(
                     }
                 },
                 modifier = Modifier.weight(1f).height(50.dp),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                enabled = !uiState.isOcrLoading
             ) {
-                if (uiState.isOcrLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                if (uiState.isOcrLoading && uiState.ocrTotal == 1) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp), 
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.extracting_text))
                 } else {
                     Icon(Icons.Default.TextSnippet, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.read_text))
+                }
+            }
+        }
+
+        if (uiState.imageUris.size > 1) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = { viewModel.extractTextFromAllImages() },
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                enabled = !uiState.isOcrLoading
+            ) {
+                if (uiState.isOcrLoading && uiState.ocrTotal > 1) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("${stringResource(R.string.extracting_all)} (${uiState.ocrProgress}/${uiState.ocrTotal})")
+                } else {
+                    Icon(Icons.Default.MenuBook, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.read_all_pages, uiState.imageUris.size))
                 }
             }
         }

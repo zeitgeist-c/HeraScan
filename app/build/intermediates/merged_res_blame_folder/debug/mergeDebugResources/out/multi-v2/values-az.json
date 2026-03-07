@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.seninadin.herascan.app-mergeDebugResources-58:/values-az/values-az.xml",
+            "outputFile": "com.seninadin.herascan.app-mergeDebugResources-64:/values-az/values-az.xml",
             "map": [
                 {
                     "source": "C:\\Users\\user\\.gradle\\caches\\transforms-4\\7b46fd23e2aeb6fe2f31a72996ead094\\transformed\\core-1.12.0\\res\\values-az\\values-az.xml",

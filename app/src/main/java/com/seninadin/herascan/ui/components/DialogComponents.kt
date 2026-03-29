@@ -1,158 +1,383 @@
+@file:Suppress("SpellCheckingInspection")
 package com.seninadin.herascan.ui.components
 
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.DocumentScanner
-import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import android.widget.Toast
+import androidx.compose.ui.unit.sp
 import com.seninadin.herascan.MainViewModel
 import com.seninadin.herascan.R
 import com.seninadin.herascan.ScanUiState
+
+// ════════════════════════════════════════════════════════════════
+//  Boş Durum Ekranı
+// ════════════════════════════════════════════════════════════════
 
 @Composable
 fun EmptyStateSection() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 40.dp),
+            .padding(vertical = 32.dp, horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(
-            imageVector = Icons.Default.DocumentScanner,
-            contentDescription = "Boş Durum",
-            modifier = Modifier.size(80.dp),
-            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-        )
-        Spacer(modifier = Modifier.height(16.dp))
+        // İllüstrasyon
+        EmptyStateIllustration()
+
+        Spacer(Modifier.height(28.dp))
+
         Text(
-            stringResource(R.string.empty_state_title),
+            text = stringResource(R.string.empty_state_title),
             style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Medium
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            stringResource(R.string.empty_state_desc),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = stringResource(R.string.empty_state_desc),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.widthIn(max = 260.dp)
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        // Bilgi çipi
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.primaryContainer,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier.padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(MaterialTheme.colorScheme.primary)
+                )
+                Text(
+                    text = "Kameradan çekim veya galeriden seçim yapabilirsiniz · En fazla 20 sayfa",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    lineHeight = 18.sp
+                )
+            }
+        }
     }
 }
+
+/** Compose ile çizilmiş boş durum illüstrasyonu */
+@Composable
+private fun EmptyStateIllustration() {
+    Box(
+        modifier = Modifier.size(120.dp),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        // Gölge
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .size(width = 80.dp, height = 8.dp)
+                .clip(RoundedCornerShape(50))
+                .background(MaterialTheme.colorScheme.outlineVariant)
+        )
+
+        // Arka belge
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .offset(x = 8.dp, y = (-12).dp)
+                .size(width = 60.dp, height = 78.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .then(
+                    Modifier.border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        shape = RoundedCornerShape(6.dp)
+                    )
+                )
+        )
+
+        // Ana belge
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .offset(y = (-8).dp)
+                .size(width = 66.dp, height = 86.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .background(MaterialTheme.colorScheme.surface)
+                .then(
+                    Modifier.border(
+                        width = 1.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        shape = RoundedCornerShape(6.dp)
+                    )
+                )
+        ) {
+            // Belge satırları
+            Column(
+                modifier = Modifier.padding(start = 10.dp, top = 20.dp, end = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp)
+            ) {
+                repeat(5) { i ->
+                    val widths = listOf(0.85f, 0.70f, 0.90f, 0.60f, 0.80f)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(widths[i])
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(MaterialTheme.colorScheme.outlineVariant)
+                    )
+                }
+            }
+        }
+
+        // Kamera ikonu (sağ üst)
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .size(34.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(MaterialTheme.colorScheme.primary),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.AddAPhoto,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+    }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  OCR Sonuç İçeriği (Bottom Sheet içinde gösterilir)
+// ════════════════════════════════════════════════════════════════
 
 @Composable
 fun OcrResultContent(extractedText: String, context: Context) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(24.dp)
+            .padding(horizontal = 20.dp)
+            .padding(top = 8.dp, bottom = 32.dp)
     ) {
-        Text(
-            stringResource(R.string.extracted_text),
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            style = MaterialTheme.typography.titleLarge
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f, fill = false) 
-                .clip(RoundedCornerShape(8.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                .padding(16.dp)
+        // Başlık
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(bottom = 16.dp)
         ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(MaterialTheme.colorScheme.tertiaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.TextSnippet,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
             Text(
-                text = extractedText, 
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.verticalScroll(rememberScrollState())
+                text = stringResource(R.string.extracted_text),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
-        
-        Spacer(modifier = Modifier.height(24.dp))
+
+        // Metin kutusu
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 120.dp, max = 280.dp)
+        ) {
+            Text(
+                text = extractedText,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontFamily = FontFamily.Monospace,
+                    lineHeight = 20.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .padding(14.dp)
+                    .verticalScroll(rememberScrollState())
+            )
+        }
+
+        Spacer(Modifier.height(20.dp))
+
+        // Aksiyon butonları
         Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.align(Alignment.End)
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
             val copyMsg = stringResource(R.string.text_copied)
+
+            // Kopyala
             OutlinedButton(
                 onClick = {
                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    val clip = ClipData.newPlainText("HeraScan OCR", extractedText)
-                    clipboard.setPrimaryClip(clip)
+                    clipboard.setPrimaryClip(ClipData.newPlainText("HeraScan OCR", extractedText))
                     Toast.makeText(context, copyMsg, Toast.LENGTH_SHORT).show()
                 },
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                modifier = Modifier.weight(1f).height(44.dp)
             ) {
-                Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.copy))
+                Icon(
+                    Icons.Default.ContentCopy,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = stringResource(R.string.copy),
+                    style = MaterialTheme.typography.labelLarge
+                )
             }
-            
+
+            // Paylaş
             val shareChooser = stringResource(R.string.share_text_chooser)
             Button(
                 onClick = {
-                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                    val intent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
                         putExtra(Intent.EXTRA_TEXT, extractedText)
                     }
-                    context.startActivity(Intent.createChooser(shareIntent, shareChooser))
+                    context.startActivity(Intent.createChooser(intent, shareChooser))
                 },
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.weight(1f).height(44.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
             ) {
-                Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.share))
+                Icon(
+                    Icons.Default.Share,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = stringResource(R.string.share),
+                    style = MaterialTheme.typography.labelLarge
+                )
             }
         }
-        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 
-@Composable
-fun RenameDocumentDialog(uiState: ScanUiState, viewModel: MainViewModel, context: Context) {
-    val savedDefaultMsg = stringResource(R.string.saved_default_name)
-    val savedHistoryMsg = stringResource(R.string.saved_to_history)
+// ════════════════════════════════════════════════════════════════
+//  Belge Adlandırma Dialogu
+// ════════════════════════════════════════════════════════════════
 
+@Composable
+fun RenameDocumentDialog(
+    uiState: ScanUiState,
+    viewModel: MainViewModel,
+    context: Context
+) {
     AlertDialog(
-        onDismissRequest = {
-            viewModel.saveCurrentScanToHistory()
+        onDismissRequest = { viewModel.saveCurrentScanToHistory() },
+        shape = RoundedCornerShape(20.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
+        title = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = stringResource(R.string.rename_document),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "Geçmişte kolayca bulabilmek için anlamlı bir ad verin",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         },
-        title = { Text(stringResource(R.string.rename_document), style = MaterialTheme.typography.titleMedium) },
         text = {
             OutlinedTextField(
                 value = uiState.documentName,
                 onValueChange = { viewModel.updateDocumentName(it) },
-                label = { Text(stringResource(R.string.document_name)) },
+                label = {
+                    Text(
+                        text = stringResource(R.string.document_name),
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                },
                 singleLine = true,
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             )
         },
         confirmButton = {
-            Button(onClick = {
-                viewModel.saveCurrentScanToHistory()
-            }) {
-                Text(stringResource(R.string.save))
+            Button(
+                onClick = { viewModel.saveCurrentScanToHistory() },
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text(
+                    text = stringResource(R.string.save),
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = { viewModel.saveCurrentScanToHistory() }
+            ) {
+                Text(
+                    text = stringResource(R.string.cancel),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     )

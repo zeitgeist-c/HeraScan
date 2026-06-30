@@ -16,3 +16,6 @@ app/build/
 # Misc
 *.log
 .DS_Store
+
+# Room schema export
+schemas/

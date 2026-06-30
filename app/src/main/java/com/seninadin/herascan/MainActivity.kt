@@ -60,16 +60,18 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun HeraScanApp() {
     val context = LocalContext.current
+    val activity = remember { context as? Activity }
 
     LaunchedEffect(Unit) {
         cleanupTempFiles(context)
     }
 
     // ViewModel kurulumu
-    val dao        = remember { HeraScanDatabase.getDatabase(context.applicationContext).scanHistoryDao() }
-    val repository = remember { ScanRepository(dao) }
+    val application = context.applicationContext as android.app.Application
+    val dao         = remember { HeraScanDatabase.getDatabase(application).scanHistoryDao() }
+    val repository  = remember { ScanRepository(dao) }
     val viewModel: MainViewModel = viewModel(
-        factory = MainViewModelFactory(context.applicationContext as android.app.Application, repository)
+        factory = MainViewModelFactory(application, repository)
     )
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -92,7 +94,7 @@ fun HeraScanApp() {
     val scannerOptions = remember {
         GmsDocumentScannerOptions.Builder()
             .setGalleryImportAllowed(true)
-            .setPageLimit(20)
+            .setPageLimit(50)
             .setResultFormats(
                 GmsDocumentScannerOptions.RESULT_FORMAT_JPEG,
                 GmsDocumentScannerOptions.RESULT_FORMAT_PDF
@@ -162,10 +164,11 @@ fun HeraScanApp() {
             val failMsg = stringResource(R.string.scanner_failed)
             ExtendedFloatingActionButton(
                 onClick = {
+                    if (activity == null) return@ExtendedFloatingActionButton
                     scope.launch {
                         try {
                             val intentSender = withContext(Dispatchers.IO) {
-                                scanner.getStartScanIntent(context as Activity).await()
+                                scanner.getStartScanIntent(activity).await()
                             }
                             scanLauncher.launch(IntentSenderRequest.Builder(intentSender).build())
                         } catch (e: Exception) {
@@ -220,6 +223,7 @@ fun HeraScanApp() {
                 Spacer(Modifier.height(20.dp))
                 HistorySection(
                     pagingItems = pagingItems,
+                    onScanClick = { viewModel.openScanFromHistory(it) },
                     onDelete = { viewModel.deleteScan(it) }
                 )
                 Spacer(Modifier.height(80.dp))

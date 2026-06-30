@@ -46,4 +46,20 @@
     <string name="back">Geri</string>
     <string name="pages">sayfa</string>
     <string name="view_pdf">PDF Görüntüle</string>
+    <string name="loading_pdf">PDF yükleniyor…</string>
+    <string name="page_x_of_y">Sayfa %1$d / %2$d</string>
+    <string name="reset_zoom">Yakınlaşmayı sıfırla</string>
+    <string name="page_load_error">Sayfa yüklenemedi</string>
+    <string name="actions">İşlemler</string>
+    <string name="app_chooser">Uygulama seç</string>
+    <string name="downloads">İndirilenler</string>
+    <string name="first_page">İlk sayfa</string>
+    <string name="in_app">Uygulama içi</string>
+    <string name="ocr_description">OCR ile metin çıkar · yapay zeka destekli</string>
+    <string name="empty_state_tip">Kameradan çekim veya galeriden seçim yapabilirsiniz · En fazla 50 sayfa</string>
+    <string name="rename_document_hint">Geçmişte kolayca bulabilmek için anlamlı bir ad verin</string>
+    <string name="page_count_format">%1$d sayfa</string>
+    <string name="page_count_badge">%1$d Sayfa</string>
+    <string name="save_text">Metni Kaydet</string>
+    <string name="save_text_success">Metin HeraScan klasörüne kaydedildi.</string>
 </resources>

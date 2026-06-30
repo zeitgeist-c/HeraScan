@@ -163,7 +163,7 @@ private fun PdfBanner(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "$pageCount sayfa",
+                    text = stringResource(R.string.page_count_format, pageCount),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.secondary
                 )
@@ -330,7 +330,7 @@ private fun OcrActionRow(
                 val subtitle = if (uiState.isOcrLoading && uiState.ocrTotal > 1)
                     "${stringResource(R.string.extracting_all)} (${uiState.ocrProgress}/${uiState.ocrTotal})"
                 else
-                    "OCR ile metin çıkar · yapay zeka destekli"
+                    stringResource(R.string.ocr_description)
 
                 Text(
                     text = title,
@@ -400,7 +400,7 @@ fun ActiveScanSection(
                     color = MaterialTheme.colorScheme.primaryContainer
                 ) {
                     Text(
-                        text = "${uiState.imageUris.size} Sayfa",
+                        text = stringResource(R.string.page_count_badge, uiState.imageUris.size),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -440,7 +440,7 @@ fun ActiveScanSection(
     Spacer(Modifier.height(16.dp))
 
     // ── Aksiyon Bölümü ────────────────────────────────────────────
-    SectionLabel("İşlemler")   // strings.xml'e R.string.actions olarak ekleyin
+    SectionLabel(stringResource(R.string.actions))
 
     val pdfNotFoundMsg = stringResource(R.string.pdf_not_found)
 
@@ -452,7 +452,7 @@ fun ActiveScanSection(
         ActionCard(
             icon = Icons.Default.Share,
             label = stringResource(R.string.share_pdf),
-            subtitle = "Uygulama seç",
+            subtitle = stringResource(R.string.app_chooser),
             style = ActionStyle.Primary,
             modifier = Modifier.weight(1f),
             onClick = {
@@ -476,7 +476,7 @@ fun ActiveScanSection(
         ActionCard(
             icon = Icons.Default.CheckCircle,
             label = stringResource(R.string.save_pdf),
-            subtitle = "İndirilenler",
+            subtitle = stringResource(R.string.downloads),
             style = ActionStyle.Secondary,
             modifier = Modifier.weight(1f),
             onClick = {
@@ -512,7 +512,7 @@ fun ActiveScanSection(
         ActionCard(
             icon = Icons.Default.Image,
             label = stringResource(R.string.share_image),
-            subtitle = "İlk sayfa",
+            subtitle = stringResource(R.string.first_page),
             style = ActionStyle.Outlined,
             modifier = Modifier.weight(1f),
             onClick = {
@@ -536,7 +536,7 @@ fun ActiveScanSection(
         ActionCard(
             icon = Icons.Default.PictureAsPdf,
             label = stringResource(R.string.view_pdf),
-            subtitle = "Uygulama içi",
+            subtitle = stringResource(R.string.in_app),
             style = ActionStyle.Outlined,
             enabled = uiState.pdfUri != null,
             modifier = Modifier.weight(1f),

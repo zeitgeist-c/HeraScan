@@ -27,7 +27,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.LazyPagingItems
-import androidx.paging.compose.collectAsLazyPagingItems
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.seninadin.herascan.R
@@ -44,6 +43,7 @@ import java.util.Locale
 @Composable
 fun HistorySection(
     pagingItems: LazyPagingItems<ScanHistory>,
+    onScanClick: (ScanHistory) -> Unit,
     onDelete: (ScanHistory) -> Unit
 ) {
     var scanToDelete by remember { mutableStateOf<ScanHistory?>(null) }
@@ -68,6 +68,7 @@ fun HistorySection(
                     dateText = try {
                         dateFormatter.format(Date(scan.dateMillis))
                     } catch (e: Exception) { "" },
+                    onClick = { onScanClick(scan) },
                     onLongClick = { scanToDelete = scan },
                     onDeleteClick = { scanToDelete = scan }
                 )
@@ -94,6 +95,7 @@ fun HistorySection(
 private fun HistoryCard(
     scan: ScanHistory,
     dateText: String,
+    onClick: () -> Unit,
     onLongClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
@@ -110,12 +112,12 @@ private fun HistoryCard(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                modifier = Modifier
-                    .size(92.dp, 124.dp)
-                    .combinedClickable(
-                        onClick = { /* İleride detay ekranı eklenebilir */ },
-                        onLongClick = onLongClick
-                    )
+                        modifier = Modifier
+                            .size(92.dp, 124.dp)
+                            .combinedClickable(
+                                onClick = onClick,
+                                onLongClick = onLongClick
+                            )
             ) {
                 if (scan.thumbnailUri != null) {
                     AsyncImage(

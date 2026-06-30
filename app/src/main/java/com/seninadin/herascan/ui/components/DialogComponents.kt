@@ -6,6 +6,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,6 +30,8 @@ import androidx.compose.ui.unit.sp
 import com.seninadin.herascan.MainViewModel
 import com.seninadin.herascan.R
 import com.seninadin.herascan.ScanUiState
+import com.seninadin.herascan.utils.saveTextToFile
+import kotlinx.coroutines.launch
 
 // ════════════════════════════════════════════════════════════════
 //  Boş Durum Ekranı
@@ -84,7 +87,7 @@ fun EmptyStateSection() {
                         .background(MaterialTheme.colorScheme.primary)
                 )
                 Text(
-                    text = "Kameradan çekim veya galeriden seçim yapabilirsiniz · En fazla 20 sayfa",
+                    text = stringResource(R.string.empty_state_tip),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                     lineHeight = 18.sp
@@ -186,6 +189,7 @@ private fun EmptyStateIllustration() {
 
 @Composable
 fun OcrResultContent(extractedText: String, context: Context) {
+    val scope = rememberCoroutineScope()
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -302,6 +306,41 @@ fun OcrResultContent(extractedText: String, context: Context) {
                 )
             }
         }
+
+        Spacer(Modifier.height(10.dp))
+
+        val saveMsg = stringResource(R.string.save_text_success)
+        OutlinedButton(
+            onClick = {
+                scope.launch {
+                    val result = saveTextToFile(context, extractedText, "HeraScan_OCR")
+                    if (result.isSuccess) {
+                        Toast.makeText(context, saveMsg, Toast.LENGTH_SHORT).show()
+                    } else {
+                        val error = result.exceptionOrNull()?.message
+                        Toast.makeText(
+                            context,
+                            error ?: context.getString(R.string.save_failed),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            },
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            modifier = Modifier.fillMaxWidth().height(44.dp)
+        ) {
+            Icon(
+                Icons.Default.Save,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = stringResource(R.string.save_text),
+                style = MaterialTheme.typography.labelLarge
+            )
+        }
     }
 }
 
@@ -328,7 +367,7 @@ fun RenameDocumentDialog(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "Geçmişte kolayca bulabilmek için anlamlı bir ad verin",
+                    text = stringResource(R.string.rename_document_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

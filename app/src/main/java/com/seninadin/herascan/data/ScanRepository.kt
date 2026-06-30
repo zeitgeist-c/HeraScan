@@ -9,8 +9,6 @@ import kotlinx.coroutines.flow.Flow
 
 class ScanRepository(private val scanHistoryDao: ScanHistoryDao) {
 
-    val allScans: Flow<List<ScanHistory>> = scanHistoryDao.getAllScans()
-
     fun getScansPaged(): Flow<PagingData<ScanHistory>> {
         return Pager(
             config = PagingConfig(

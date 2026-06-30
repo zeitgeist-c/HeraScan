@@ -92,6 +92,39 @@ suspend fun shareFile(context: Context, uri: Uri, mimeType: String): Result<Inte
 }
 
 /**
+ * OCR metnini TXT dosyası olarak cihaza kaydeder.
+ */
+suspend fun saveTextToFile(context: Context, text: String, fileName: String): Result<String> {
+    return withContext(Dispatchers.IO) {
+        try {
+            val actualFileName = if (fileName.endsWith(".txt")) fileName else "$fileName.txt"
+            val resolver = context.contentResolver
+
+            val contentValues = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, actualFileName)
+                put(MediaStore.MediaColumns.MIME_TYPE, "text/plain")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS + "/HeraScan")
+                }
+            }
+
+            val uri = resolver.insert(MediaStore.Files.getContentUri("external"), contentValues)
+            if (uri != null) {
+                resolver.openOutputStream(uri)?.use { outputStream ->
+                    outputStream.write(text.toByteArray(Charsets.UTF_8))
+                }
+                Result.success(actualFileName)
+            } else {
+                Result.failure(Exception(context.getString(R.string.save_failed)))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(Exception(context.getString(R.string.save_error, e.message)))
+        }
+    }
+}
+
+/**
  * Belirtilen URI'deki PDF'i cihazın Belgeler (Documents) klasörüne kaydeder.
  */
 suspend fun savePdfToDevice(context: Context, sourceUri: Uri?): Result<String> {

@@ -4,8 +4,9 @@ package com.seninadin.herascan.ui.components
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
-import android.util.DisplayMetrics
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,10 +16,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,7 +24,6 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -36,6 +32,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 private const val MAX_PDF_DIMENSION = 2048
+private const val TARGET_WIDTH_DP = 400
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,63 +46,32 @@ fun PdfViewerScreen(
     var pageCount by remember { mutableIntStateOf(0) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
-    var pages by remember { mutableStateOf<List<Bitmap>>(emptyList()) }
 
-    val density = LocalDensity.current
+    val renderer = remember(pdfUri) {
+        try {
+            val fd = context.contentResolver.openFileDescriptor(pdfUri, "r")
+            fd?.let { PdfRenderer(it) }
+        } catch (e: Exception) {
+            null
+        }
+    }
 
-    DisposableEffect(pdfUri) {
+    DisposableEffect(renderer) {
         onDispose {
-            pages.forEach { bitmap ->
-                if (!bitmap.isRecycled) bitmap.recycle()
-            }
+            renderer?.close()
         }
     }
 
-    LaunchedEffect(pdfUri) {
-        withContext(Dispatchers.IO) {
-            try {
-                val fd = context.contentResolver.openFileDescriptor(pdfUri, "r")
-                if (fd != null) {
-                    val renderer = PdfRenderer(fd)
-                    pageCount = renderer.pageCount
-                    val bitmaps = mutableListOf<Bitmap>()
-
-                    val displayMetrics = DisplayMetrics()
-                    @Suppress("DEPRECATION")
-                    renderer.openPage(0).let { page ->
-                        val screenWidthPx = with(density) { 400.dp.toPx().toInt() }
-                        val scale = (screenWidthPx.toFloat() / page.width).coerceIn(0.5f, 2f)
-                        val targetWidth = (page.width * scale).toInt().coerceAtMost(MAX_PDF_DIMENSION)
-                        val targetHeight = (page.height * scale).toInt().coerceAtMost(MAX_PDF_DIMENSION)
-                        page.close()
-
-                        for (i in 0 until renderer.pageCount) {
-                            val p = renderer.openPage(i)
-                            val bmp = Bitmap.createBitmap(
-                                targetWidth.coerceAtLeast(1),
-                                targetHeight.coerceAtLeast(1),
-                                Bitmap.Config.ARGB_8888
-                            )
-                            p.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                            bitmaps.add(bmp)
-                            p.close()
-                        }
-                    }
-
-                    renderer.close()
-                    fd.close()
-                    pages = bitmaps
-                    isLoading = false
-                } else {
-                    error = "PDF dosyası açılamadı"
-                    isLoading = false
-                }
-            } catch (e: Exception) {
-                error = e.message
-                isLoading = false
-            }
+    LaunchedEffect(renderer) {
+        if (renderer != null) {
+            pageCount = renderer.pageCount
+        } else {
+            error = "PDF dosyası açılamadı"
         }
+        isLoading = false
     }
+
+    BackHandler(onBack = onClose)
 
     Scaffold(
         topBar = {
@@ -133,7 +99,7 @@ fun PdfViewerScreen(
                             strokeWidth = 3.dp
                         )
                         Text(
-                            text = "PDF yükleniyor…",
+                            text = stringResource(R.string.loading_pdf),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -174,10 +140,13 @@ fun PdfViewerScreen(
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        itemsIndexed(pages) { index, bitmap ->
+                        itemsIndexed(
+                            items = List(pageCount) { it },
+                            key = { index, _ -> index }
+                        ) { index, _ ->
                             PdfPageCard(
-                                bitmap = bitmap,
-                                pageNumber = index + 1,
+                                renderer = renderer,
+                                pageIndex = index,
                                 totalPages = pageCount,
                                 contentDescription = stringResource(R.string.page_number, index + 1)
                             )
@@ -188,8 +157,6 @@ fun PdfViewerScreen(
         }
     }
 }
-
-// ─── Top App Bar ───────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -239,20 +206,55 @@ private fun PdfViewerTopBar(
     )
 }
 
-// ─── PDF Sayfa Kartı (zoom destekli) ──────────────────────────
-
 @Composable
 private fun PdfPageCard(
-    bitmap: Bitmap,
-    pageNumber: Int,
+    renderer: PdfRenderer?,
+    pageIndex: Int,
     totalPages: Int,
     contentDescription: String
 ) {
-    var scale  by remember { mutableFloatStateOf(1f) }
+    var bitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var loadError by remember { mutableStateOf(false) }
+
+    LaunchedEffect(pageIndex) {
+        if (renderer != null) {
+            withContext(Dispatchers.IO) {
+                try {
+                    synchronized(renderer) {
+                        val page = renderer.openPage(pageIndex)
+                        val scale = (TARGET_WIDTH_DP.dp.value * 3f / page.width).coerceIn(0.5f, 2f)
+                        val targetWidth = (page.width * scale).toInt().coerceAtMost(MAX_PDF_DIMENSION)
+                        val targetHeight = (page.height * scale).toInt().coerceAtMost(MAX_PDF_DIMENSION)
+                        page.close()
+
+                        val p = renderer.openPage(pageIndex)
+                        val bmp = Bitmap.createBitmap(
+                            targetWidth.coerceAtLeast(1),
+                            targetHeight.coerceAtLeast(1),
+                            Bitmap.Config.ARGB_8888
+                        )
+                        p.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                        p.close()
+                        bitmap = bmp
+                    }
+                } catch (e: Exception) {
+                    loadError = true
+                }
+            }
+        }
+    }
+
+    DisposableEffect(pageIndex) {
+        onDispose {
+            bitmap?.recycle()
+            bitmap = null
+        }
+    }
+
+    var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
 
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        // Sayfa numarası etiketi
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -263,7 +265,7 @@ private fun PdfPageCard(
                 color = MaterialTheme.colorScheme.surfaceVariant
             ) {
                 Text(
-                    text = "Sayfa $pageNumber / $totalPages",
+                    text = stringResource(R.string.page_x_of_y, pageIndex + 1, totalPages),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
@@ -284,43 +286,81 @@ private fun PdfPageCard(
             }
         }
 
-        // Sayfa görüntüsü — zoom + pan destekli
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .pointerInput(Unit) {
-                    detectTransformGestures { _, pan, zoom, _ ->
-                        scale = (scale * zoom).coerceIn(1f, 5f)
+        val currentBitmap = bitmap
+        if (currentBitmap != null && !loadError) {
+            var gestureModifier = Modifier.pointerInput(Unit) {
+                detectTapGestures(
+                    onDoubleTap = {
                         if (scale > 1f) {
-                            offset = Offset(
-                                x = (offset.x + pan.x).coerceIn(-600f * (scale - 1), 600f * (scale - 1)),
-                                y = (offset.y + pan.y).coerceIn(-600f * (scale - 1), 600f * (scale - 1))
-                            )
-                        } else {
+                            scale = 1f
                             offset = Offset.Zero
+                        } else {
+                            scale = 2.5f
                         }
                     }
-                },
-            shape = RoundedCornerShape(12.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-        ) {
-            Image(
-                bitmap = bitmap.asImageBitmap(),
-                contentDescription = contentDescription,
+                )
+            }
+            if (scale > 1f) {
+                gestureModifier = gestureModifier.then(
+                    Modifier.pointerInput(scale) {
+                        detectTransformGestures { _, pan, zoom, _ ->
+                            scale = (scale * zoom).coerceIn(1f, 5f)
+                            if (scale > 1f) {
+                                val maxPan = 300f * (scale - 1)
+                                offset = Offset(
+                                    x = (offset.x + pan.x).coerceIn(-maxPan, maxPan),
+                                    y = (offset.y + pan.y).coerceIn(-maxPan, maxPan)
+                                )
+                            } else {
+                                offset = Offset.Zero
+                            }
+                        }
+                    }
+                )
+            }
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .graphicsLayer(
-                        scaleX = scale,
-                        scaleY = scale,
-                        translationX = offset.x,
-                        translationY = offset.y
+                    .clip(RoundedCornerShape(12.dp))
+                    .then(gestureModifier),
+                shape = RoundedCornerShape(12.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Image(
+                    bitmap = currentBitmap.asImageBitmap(),
+                    contentDescription = contentDescription,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .graphicsLayer(
+                            scaleX = scale,
+                            scaleY = scale,
+                            translationX = offset.x,
+                            translationY = offset.y
+                        )
+                )
+            }
+        } else if (loadError) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.errorContainer,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 100.dp)
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stringResource(R.string.page_load_error),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer
                     )
-            )
+                }
+            }
         }
 
-        // Zoom sıfırla butonu (yakınlaşıldığında göster)
         if (scale > 1f) {
             TextButton(
                 onClick = {
@@ -330,7 +370,7 @@ private fun PdfPageCard(
                 modifier = Modifier.align(Alignment.End)
             ) {
                 Text(
-                    text = "Yakınlaşmayı sıfırla",
+                    text = stringResource(R.string.reset_zoom),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary
                 )

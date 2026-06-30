@@ -14,7 +14,14 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.seninadin.herascan.data.ScanRepository
 import com.seninadin.herascan.db.ScanHistory
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -54,9 +61,6 @@ class MainViewModel(
     private val _uiEvents = MutableSharedFlow<ScanUiEvent>()
     val uiEvents = _uiEvents.asSharedFlow()
 
-    val scanHistory = repository.allScans
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
     val pagedScans: Flow<PagingData<ScanHistory>> = repository.getScansPaged()
         .cachedIn(viewModelScope)
 
@@ -85,6 +89,17 @@ class MainViewModel(
 
     fun showPdfViewer() {
         _uiState.update { it.copy(showPdfViewer = true) }
+    }
+
+    fun openScanFromHistory(scan: ScanHistory) {
+        _uiState.update {
+            it.copy(
+                imageUris = if (scan.thumbnailUri != null) listOf(Uri.parse(scan.thumbnailUri)) else emptyList(),
+                pdfUri = scan.pdfUri?.let { Uri.parse(it) },
+                documentName = scan.title,
+                showPdfViewer = scan.pdfUri != null
+            )
+        }
     }
 
     fun dismissPdfViewer() {

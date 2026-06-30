@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [ScanHistory::class], version = 1, exportSchema = false)
+@Database(entities = [ScanHistory::class], version = 1, exportSchema = true)
 abstract class HeraScanDatabase : RoomDatabase() {
     abstract fun scanHistoryDao(): ScanHistoryDao
 
@@ -19,7 +19,9 @@ abstract class HeraScanDatabase : RoomDatabase() {
                     context.applicationContext,
                     HeraScanDatabase::class.java,
                     "herascan_database"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration()
+                    .build()
                 INSTANCE = instance
                 instance
             }

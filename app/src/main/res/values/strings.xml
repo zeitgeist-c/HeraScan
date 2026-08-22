@@ -24,7 +24,6 @@
     <string name="rename_document">Belgeyi İsimlendir</string>
     <string name="document_name">Belge Adı</string>
     <string name="save">Kaydet</string>
-    <string name="saved_default_name">Belge varsayılan isimle kaydedildi.</string>
     <string name="saved_to_history">Belge geçmişe kaydedildi.</string>
     <string name="share_file_chooser">Dosyayı Paylaş:</string>
     <string name="share_error">Paylaşım Hatası: %1$s</string>
@@ -34,7 +33,6 @@
     <string name="save_error">Kayıt Hatası: %1$s</string>
     <string name="default_doc_name">Belge</string>
     <string name="text_not_found">Metin bulunamadı.</string>
-    <string name="extracting_text">Metin çıkarılıyor…</string>
     <string name="extracting_all">Tüm sayfalar okunuyor</string>
     <string name="read_all_pages">Tüm %1$d Sayfayı Oku</string>
     <string name="error_occurred">Bir hata oluştu: %1$s</string>

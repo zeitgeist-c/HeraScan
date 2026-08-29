@@ -54,7 +54,12 @@ fun clearAllTempFiles(context: Context) {
 /**
  * Dosya paylaşımı için geçici bir URI oluşturur ve Paylaşım Intent'i döner.
  */
-suspend fun shareFile(context: Context, uri: Uri, mimeType: String): Result<Intent> {
+suspend fun shareFile(
+    context: Context,
+    uri: Uri,
+    mimeType: String,
+    documentName: String
+): Result<Intent> {
     return withContext(Dispatchers.IO) {
         try {
             val extension = if (mimeType == "application/pdf") ".pdf" else ".jpg"
@@ -63,7 +68,7 @@ suspend fun shareFile(context: Context, uri: Uri, mimeType: String): Result<Inte
             val tempFolder = File(context.cacheDir, folderName)
             if (!tempFolder.exists()) tempFolder.mkdirs()
 
-            val tempFile = File(tempFolder, "share_temp_${System.currentTimeMillis()}$extension")
+            val tempFile = File(tempFolder, documentName.toSafeFileName(extension))
             
             context.contentResolver.openInputStream(uri)?.use { input ->
                 FileOutputStream(tempFile).use { output ->
@@ -127,14 +132,18 @@ suspend fun saveTextToFile(context: Context, text: String, fileName: String): Re
 /**
  * Belirtilen URI'deki PDF'i cihazın Belgeler (Documents) klasörüne kaydeder.
  */
-suspend fun savePdfToDevice(context: Context, sourceUri: Uri?): Result<String> {
+suspend fun savePdfToDevice(
+    context: Context,
+    sourceUri: Uri?,
+    documentName: String
+): Result<String> {
     if (sourceUri == null) {
         return Result.failure(Exception(context.getString(R.string.save_pdf_not_found)))
     }
 
     return withContext(Dispatchers.IO) {
         try {
-            val fileName = "HeraScan_${System.currentTimeMillis()}.pdf"
+            val fileName = documentName.toSafeFileName(".pdf")
             val resolver = context.contentResolver
             
             val contentValues = ContentValues().apply {
@@ -161,4 +170,20 @@ suspend fun savePdfToDevice(context: Context, sourceUri: Uri?): Result<String> {
             Result.failure(Exception(context.getString(R.string.save_error, e.message)))
         }
     }
+}
+
+internal fun String.toSafeFileName(extension: String): String {
+    val normalizedExtension = if (extension.startsWith(".")) extension else ".$extension"
+    val nameWithoutExtension = if (endsWith(normalizedExtension, ignoreCase = true)) {
+        dropLast(normalizedExtension.length)
+    } else {
+        this
+    }
+    val safeName = nameWithoutExtension
+        .trim()
+        .replace(Regex("[\\\\/:*?\"<>|]"), "_")
+        .trimEnd('.', ' ')
+        .ifBlank { "HeraScan" }
+
+    return "$safeName$normalizedExtension"
 }

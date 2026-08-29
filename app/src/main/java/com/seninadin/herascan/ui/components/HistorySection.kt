@@ -147,24 +147,24 @@ private fun HistoryCard(
             }
 
             // Sil butonu (sağ üst köşe)
-            Box(
+            IconButton(
+                onClick = onDeleteClick,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(5.dp)
-                    .size(20.dp)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.45f)),
-                contentAlignment = Alignment.Center
+                    .size(48.dp)
             ) {
-                IconButton(
-                    onClick = onDeleteClick,
-                    modifier = Modifier.size(20.dp)
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.65f)),
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = stringResource(R.string.delete),
                         tint = Color.White,
-                        modifier = Modifier.size(10.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }

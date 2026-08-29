@@ -458,7 +458,12 @@ fun ActiveScanSection(
             onClick = {
                 uiState.pdfUri?.let { uri ->
                     scope.launch {
-                        val result = shareFile(context, uri, "application/pdf")
+                        val result = shareFile(
+                            context,
+                            uri,
+                            "application/pdf",
+                            uiState.documentName
+                        )
                         if (result.isSuccess) {
                             result.getOrNull()?.let { context.startActivity(it) }
                         } else {
@@ -481,7 +486,11 @@ fun ActiveScanSection(
             modifier = Modifier.weight(1f),
             onClick = {
                 scope.launch {
-                    val result = savePdfToDevice(context, uiState.pdfUri)
+                    val result = savePdfToDevice(
+                        context,
+                        uiState.pdfUri,
+                        uiState.documentName
+                    )
                     if (result.isSuccess) {
                         val fileName = result.getOrNull()
                         Toast.makeText(
@@ -518,7 +527,12 @@ fun ActiveScanSection(
             onClick = {
                 if (uiState.imageUris.isNotEmpty()) {
                     scope.launch {
-                        val result = shareFile(context, uiState.imageUris.first(), "image/jpeg")
+                        val result = shareFile(
+                            context,
+                            uiState.imageUris.first(),
+                            "image/jpeg",
+                            uiState.documentName
+                        )
                         if (result.isSuccess) {
                             result.getOrNull()?.let { context.startActivity(it) }
                         } else {

@@ -4,9 +4,7 @@
 
 Tek aktiviteli Jetpack Compose uygulaması: JPEG/PDF tarama, PDF görüntüleme, çevrimdışı OCR ve yerel tarama geçmişi. Her şey cihazda — ML Kit, Room, MediaStore.
 
-![HeraScan ekran görüntüleri](./docs/screenshots/)
-
-> Ekran görüntüleri temiz kurulumdan ekleniyor (örnek veri yok). Yukarıdaki klasöre konacak.
+![Boş ana ekran (emulator)](./docs/screenshots/01-ana-ekran.png)
 
 ## Özellikler
 

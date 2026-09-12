@@ -4,9 +4,7 @@
 
 Single-activity Jetpack Compose app: scan to JPEG/PDF, view PDFs, run offline OCR, and keep a local scan history. Everything on-device — ML Kit, Room, MediaStore.
 
-![HeraScan screenshots](./docs/screenshots/)
-
-> Screenshots are being added from a clean install (no sample data). The folder above will hold them.
+![Empty home screen (emulator)](./docs/screenshots/01-ana-ekran.png)
 
 ## Features
 

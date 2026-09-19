@@ -38,19 +38,6 @@ fun cleanupTempFiles(context: Context) {
     }
 }
 
-fun clearAllTempFiles(context: Context) {
-    CoroutineScope(Dispatchers.IO).launch {
-        val pdfFolder = File(context.cacheDir, "pdfs")
-        val imagesFolder = File(context.cacheDir, "images")
-        
-        listOf(pdfFolder, imagesFolder).forEach { folder ->
-            if (folder.exists()) {
-                folder.deleteRecursively()
-            }
-        }
-    }
-}
-
 /**
  * Dosya paylaşımı için geçici bir URI oluşturur ve Paylaşım Intent'i döner.
  */

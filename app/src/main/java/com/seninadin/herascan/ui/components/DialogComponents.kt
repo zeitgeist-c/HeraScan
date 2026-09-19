@@ -2,9 +2,12 @@
 package com.seninadin.herascan.ui.components
 
 import android.content.ClipData
+import android.content.ClipDescription
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.os.Build
+import android.os.PersistableBundle
 import android.widget.Toast
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.foundation.BorderStroke
@@ -259,7 +262,14 @@ fun OcrResultContent(extractedText: String, context: Context) {
             OutlinedButton(
                 onClick = {
                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    clipboard.setPrimaryClip(ClipData.newPlainText("HeraScan OCR", extractedText))
+                    val clip = ClipData.newPlainText("HeraScan OCR", extractedText)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        // TCKN/IBAN gibi hassas OCR metni pano önizlemelerinde görünmesin.
+                        clip.description.extras = PersistableBundle().apply {
+                            putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true)
+                        }
+                    }
+                    clipboard.setPrimaryClip(clip)
                     Toast.makeText(context, copyMsg, Toast.LENGTH_SHORT).show()
                 },
                 shape = RoundedCornerShape(12.dp),

@@ -47,18 +47,26 @@ fun PdfViewerScreen(
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
 
-    val renderer = remember(pdfUri) {
+    val pdfFd = remember(pdfUri) {
         try {
-            val fd = context.contentResolver.openFileDescriptor(pdfUri, "r")
-            fd?.let { PdfRenderer(it) }
+            context.contentResolver.openFileDescriptor(pdfUri, "r")
         } catch (e: Exception) {
             null
         }
     }
 
-    DisposableEffect(renderer) {
+    val renderer = remember(pdfUri, pdfFd) {
+        try {
+            pdfFd?.let { PdfRenderer(it) }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    DisposableEffect(pdfFd, renderer) {
         onDispose {
             renderer?.close()
+            pdfFd?.close()
         }
     }
 
@@ -66,7 +74,7 @@ fun PdfViewerScreen(
         if (renderer != null) {
             pageCount = renderer.pageCount
         } else {
-            error = "PDF dosyası açılamadı"
+            error = context.getString(R.string.pdf_open_error)
         }
         isLoading = false
     }
@@ -115,7 +123,7 @@ fun PdfViewerScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
+                            shape = MaterialTheme.shapes.medium,
                             color = MaterialTheme.colorScheme.errorContainer
                         ) {
                             Text(
@@ -185,7 +193,7 @@ private fun PdfViewerTopBar(
         actions = {
             if (pageCount > 0) {
                 Surface(
-                    shape = RoundedCornerShape(20.dp),
+                    shape = MaterialTheme.shapes.extraLarge,
                     color = MaterialTheme.colorScheme.primaryContainer,
                     modifier = Modifier.padding(end = 12.dp)
                 ) {
@@ -222,20 +230,20 @@ private fun PdfPageCard(
                 try {
                     synchronized(renderer) {
                         val page = renderer.openPage(pageIndex)
-                        val scale = (TARGET_WIDTH_DP.dp.value * 3f / page.width).coerceIn(0.5f, 2f)
-                        val targetWidth = (page.width * scale).toInt().coerceAtMost(MAX_PDF_DIMENSION)
-                        val targetHeight = (page.height * scale).toInt().coerceAtMost(MAX_PDF_DIMENSION)
-                        page.close()
-
-                        val p = renderer.openPage(pageIndex)
-                        val bmp = Bitmap.createBitmap(
-                            targetWidth.coerceAtLeast(1),
-                            targetHeight.coerceAtLeast(1),
-                            Bitmap.Config.ARGB_8888
-                        )
-                        p.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                        p.close()
-                        bitmap = bmp
+                        try {
+                            val scale = (TARGET_WIDTH_DP.dp.value * 3f / page.width).coerceIn(0.5f, 2f)
+                            val targetWidth = (page.width * scale).toInt().coerceAtMost(MAX_PDF_DIMENSION)
+                            val targetHeight = (page.height * scale).toInt().coerceAtMost(MAX_PDF_DIMENSION)
+                            val bmp = Bitmap.createBitmap(
+                                targetWidth.coerceAtLeast(1),
+                                targetHeight.coerceAtLeast(1),
+                                Bitmap.Config.ARGB_8888
+                            )
+                            page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                            bitmap = bmp
+                        } finally {
+                            page.close()
+                        }
                     }
                 } catch (e: Exception) {
                     loadError = true
@@ -246,7 +254,7 @@ private fun PdfPageCard(
 
     DisposableEffect(pageIndex) {
         onDispose {
-            bitmap?.recycle()
+            // Compose çizim hattı bitmap'i bir sonraki karede kullanabilir; recycle() çökme riski taşır.
             bitmap = null
         }
     }
@@ -261,7 +269,7 @@ private fun PdfPageCard(
             modifier = Modifier.padding(horizontal = 4.dp)
         ) {
             Surface(
-                shape = RoundedCornerShape(6.dp),
+                shape = MaterialTheme.shapes.extraSmall,
                 color = MaterialTheme.colorScheme.surfaceVariant
             ) {
                 Text(
@@ -273,7 +281,7 @@ private fun PdfPageCard(
             }
             if (scale > 1f) {
                 Surface(
-                    shape = RoundedCornerShape(6.dp),
+                    shape = MaterialTheme.shapes.extraSmall,
                     color = MaterialTheme.colorScheme.tertiaryContainer
                 ) {
                     Text(

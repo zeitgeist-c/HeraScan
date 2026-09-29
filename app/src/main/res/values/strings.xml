@@ -60,4 +60,17 @@
     <string name="page_count_badge">%1$d Sayfa</string>
     <string name="save_text">Metni Kaydet</string>
     <string name="save_text_success">Metin HeraScan klasörüne kaydedildi.</string>
+    <string name="save_permission_denied">Kaydetmek için depolama izni gerekli.</string>
+    <string name="ocr_pages_failed">%1$d sayfa okunamadı, kalan sayfalar işlendi.</string>
+    <string name="ocr_all_pages_failed">Sayfalar okunamadı. Lütfen tekrar deneyin.</string>
+    <string name="ocr_failed">Metin okunamadı. Lütfen tekrar deneyin.</string>
+    <string name="pdf_open_error">PDF açılamadı.</string>
+    <string name="pdf_desc">PDF belgesi</string>
+    <string name="date_unknown">Bilinmiyor</string>
+    <string name="doc_name_required">Önce belge adı yazın.</string>
+    <string name="operation_failed">İşlem başarısız.</string>
+    <string name="save_history_failed">Belge geçmişe kaydedilemedi.</string>
+    <string name="scanner_start_failed">Tarayıcı başlatılamadı.</string>
+    <string name="clipboard_legacy_notice">Eski cihazlarda pano önizlemesi görünebilir.</string>
+    <string name="delete_keeps_files">Cihaza kaydedilmiş PDF/TXT dosyaları cihazda kalır.</string>
 </resources>

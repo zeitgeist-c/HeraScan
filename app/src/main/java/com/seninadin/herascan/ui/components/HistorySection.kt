@@ -1,7 +1,6 @@
 @file:Suppress("SpellCheckingInspection")
 package com.seninadin.herascan.ui.components
 
-import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -9,7 +8,6 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PictureAsPdf
@@ -20,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -28,12 +25,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.LazyPagingItems
 import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import com.seninadin.herascan.R
 import com.seninadin.herascan.db.ScanHistory
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.seninadin.herascan.utils.DateFormats
 
 // ════════════════════════════════════════════════════════════════
 //  Geçmiş Bölümü
@@ -47,9 +41,6 @@ fun HistorySection(
     onDelete: (ScanHistory) -> Unit
 ) {
     var scanToDelete by remember { mutableStateOf<ScanHistory?>(null) }
-    val dateFormatter = remember {
-        SimpleDateFormat("d MMM yyyy", Locale("tr", "TR"))
-    }
 
     SectionLabel(stringResource(R.string.history_scans))
 
@@ -65,9 +56,8 @@ fun HistorySection(
             pagingItems[index]?.let { scan ->
                 HistoryCard(
                     scan = scan,
-                    dateText = try {
-                        dateFormatter.format(Date(scan.dateMillis))
-                    } catch (e: Exception) { "" },
+                    dateText = runCatching { DateFormats.formatHistoryDate(scan.dateMillis) }
+                        .getOrDefault(stringResource(R.string.date_unknown)),
                     onClick = { onScanClick(scan) },
                     onLongClick = { scanToDelete = scan },
                     onDeleteClick = { scanToDelete = scan }
@@ -106,7 +96,7 @@ private fun HistoryCard(
         Box {
             // Kart — thumbnail veya PDF ikonu
             Card(
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.medium,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant
@@ -121,11 +111,7 @@ private fun HistoryCard(
             ) {
                 if (scan.thumbnailUri != null) {
                     AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(Uri.parse(scan.thumbnailUri))
-                            .crossfade(true)
-                            .size(184, 248)
-                            .build(),
+                        model = rememberScanImageRequest(scan.thumbnailUri, 184, 248),
                         contentDescription = scan.title,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
@@ -138,7 +124,7 @@ private fun HistoryCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.PictureAsPdf,
-                            contentDescription = "PDF",
+                            contentDescription = stringResource(R.string.pdf_desc),
                             tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
                             modifier = Modifier.size(32.dp)
                         )
@@ -207,7 +193,7 @@ private fun DeleteConfirmDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         containerColor = MaterialTheme.colorScheme.surface,
         title = {
             Text(
@@ -218,11 +204,18 @@ private fun DeleteConfirmDialog(
             )
         },
         text = {
-            Text(
-                text = stringResource(R.string.delete_document_confirm, title),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = stringResource(R.string.delete_document_confirm, title),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = stringResource(R.string.delete_keeps_files),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         },
         confirmButton = {
             TextButton(

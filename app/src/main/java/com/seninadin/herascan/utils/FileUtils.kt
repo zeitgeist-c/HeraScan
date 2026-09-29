@@ -7,35 +7,97 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import android.provider.OpenableColumns
 import androidx.core.content.FileProvider
 import com.seninadin.herascan.R
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.io.OutputStream
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 private const val TEMP_FILE_MAX_AGE_HOURS = 24L
+private const val TAG = "FileUtils"
 
-fun cleanupTempFiles(context: Context) {
-    CoroutineScope(Dispatchers.IO).launch {
-        val pdfFolder = File(context.cacheDir, "pdfs")
-        val imagesFolder = File(context.cacheDir, "images")
-        
-        val folders = listOf(pdfFolder, imagesFolder).filter { it.exists() }
+/** Paylaşım için kopyalanan kaynağın üst sınırı (100 MB). */
+private const val SHARE_SOURCE_MAX_BYTES = 100L * 1024 * 1024
+
+/**
+ * Boş belge adını tek noktada çözer (DB başlığı ↔ dosya adı sözleşmesi).
+ * Saf fonksiyon — birim testli.
+ */
+fun resolveDocumentName(raw: String, fallback: String): String {
+    val trimmed = raw.trim()
+    return trimmed.ifBlank { fallback }
+}
+
+/**
+ * Eski temp dosyalarını temizler. Çağıranın scope'unda çalışır
+ * (sahipsiz CoroutineScope kullanılmaz).
+ */
+suspend fun cleanupTempFiles(context: Context) {
+    withContext(Dispatchers.IO) {
+        val folders = listOf(
+            File(context.cacheDir, "pdfs"),
+            File(context.cacheDir, "images")
+        ).filter { it.exists() }
         val maxAgeMillis = TimeUnit.HOURS.toMillis(TEMP_FILE_MAX_AGE_HOURS)
         val now = System.currentTimeMillis()
-        
+
         folders.forEach { folder ->
             folder.listFiles()?.forEach { file ->
-                if (now - file.lastModified() > maxAgeMillis) {
-                    file.delete()
+                runCatching {
+                    if (now - file.lastModified() > maxAgeMillis) file.delete()
+                }.onFailure { e ->
+                    Logger.e(TAG, "Temp dosya silinemedi: ${file.name}", e)
                 }
             }
         }
     }
+}
+
+/**
+ * Kaynak URI'yi app-private cache'e kopyalar (geçmiş kayıtlarının
+ * cihaz yeniden başlatıldıktan sonra da açılması için).
+ * Dönüş: kopyanın content URI'si, ya da kopya başarısızsa null.
+ */
+suspend fun copyUriToPrivateStorage(
+    context: Context,
+    sourceUri: Uri,
+    folderName: String,
+    fileName: String
+): Uri? {
+    return withContext(Dispatchers.IO) {
+        runCatching {
+            val folder = File(context.cacheDir, folderName)
+            if (!folder.exists()) folder.mkdirs()
+            val dest = File(folder, fileName)
+            context.contentResolver.openInputStream(sourceUri)?.use { input ->
+                FileOutputStream(dest).use { output -> input.copyTo(output) }
+            } ?: return@runCatching null
+            FileProvider.getUriForFile(
+                context,
+                "${context.applicationContext.packageName}.fileprovider",
+                dest
+            )
+        }.onFailure { e ->
+            Logger.e(TAG, "Private kopya başarısız: $folderName/$fileName", e)
+        }.getOrNull()
+    }
+}
+
+private fun querySourceSize(context: Context, uri: Uri): Long? {
+    return runCatching {
+        context.contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)
+            ?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val size = cursor.getLong(0)
+                    if (size >= 0) size else null
+                } else null
+            }
+    }.getOrNull()
 }
 
 /**
@@ -49,19 +111,30 @@ suspend fun shareFile(
 ): Result<Intent> {
     return withContext(Dispatchers.IO) {
         try {
-            val extension = if (mimeType == "application/pdf") ".pdf" else ".jpg"
-            val folderName = if (mimeType == "application/pdf") "pdfs" else "images"
-            
+            val size = querySourceSize(context, uri)
+            if (size != null && size > SHARE_SOURCE_MAX_BYTES) {
+                return@withContext Result.failure(
+                    Exception(context.getString(R.string.save_failed))
+                )
+            }
+            val mime = context.contentResolver.getType(uri) ?: mimeType
+            val extension = if (mime == "application/pdf") ".pdf" else ".jpg"
+            val folderName = if (mime == "application/pdf") "pdfs" else "images"
+
             val tempFolder = File(context.cacheDir, folderName)
             if (!tempFolder.exists()) tempFolder.mkdirs()
 
-            val tempFile = File(tempFolder, documentName.toSafeFileName(extension))
-            
+            val baseName = resolveDocumentName(documentName, "HeraScan")
+            val uniqueName = "${baseName}_${UUID.randomUUID().toString().take(8)}".toSafeFileName(extension)
+            val tempFile = File(tempFolder, uniqueName)
+
             context.contentResolver.openInputStream(uri)?.use { input ->
                 FileOutputStream(tempFile).use { output ->
                     input.copyTo(output)
                 }
-            }
+            } ?: return@withContext Result.failure(
+                Exception(context.getString(R.string.save_failed))
+            )
 
             val providerUri = FileProvider.getUriForFile(
                 context,
@@ -77,8 +150,45 @@ suspend fun shareFile(
             
             Result.success(Intent.createChooser(shareIntent, context.getString(R.string.share_file_chooser)))
         } catch (e: Exception) {
-            e.printStackTrace()
-            Result.failure(e)
+            Logger.e(TAG, "Paylaşım hazırlanamadı", e)
+            Result.failure(Exception(context.getString(R.string.save_failed)))
+        }
+    }
+}
+
+/**
+ * MediaStore yazma kalıbı: insert → yaz → rollback.
+ * `saveTextToFile` ve `savePdfToDevice` ortak kullanır (DUP-02).
+ */
+private suspend fun insertMediaFile(
+    context: Context,
+    displayName: String,
+    mimeType: String,
+    write: suspend (OutputStream) -> Unit
+): Result<Unit> {
+    return withContext(Dispatchers.IO) {
+        try {
+            val resolver = context.contentResolver
+            val contentValues = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
+                put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS + "/HeraScan")
+                }
+            }
+
+            val uri = resolver.insert(MediaStore.Files.getContentUri("external"), contentValues)
+            val outputStream = uri?.let { resolver.openOutputStream(it) }
+            if (uri != null && outputStream != null) {
+                outputStream.use { write(it) }
+                Result.success(Unit)
+            } else {
+                if (uri != null) resolver.delete(uri, null, null)
+                Result.failure(Exception(context.getString(R.string.save_failed)))
+            }
+        } catch (e: Exception) {
+            Logger.e(TAG, "MediaStore yazma başarısız: $displayName", e)
+            Result.failure(Exception(context.getString(R.string.save_failed)))
         }
     }
 }
@@ -87,33 +197,10 @@ suspend fun shareFile(
  * OCR metnini TXT dosyası olarak cihaza kaydeder.
  */
 suspend fun saveTextToFile(context: Context, text: String, fileName: String): Result<String> {
-    return withContext(Dispatchers.IO) {
-        try {
-            val actualFileName = if (fileName.endsWith(".txt")) fileName else "$fileName.txt"
-            val resolver = context.contentResolver
-
-            val contentValues = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, actualFileName)
-                put(MediaStore.MediaColumns.MIME_TYPE, "text/plain")
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS + "/HeraScan")
-                }
-            }
-
-            val uri = resolver.insert(MediaStore.Files.getContentUri("external"), contentValues)
-            if (uri != null) {
-                resolver.openOutputStream(uri)?.use { outputStream ->
-                    outputStream.write(text.toByteArray(Charsets.UTF_8))
-                }
-                Result.success(actualFileName)
-            } else {
-                Result.failure(Exception(context.getString(R.string.save_failed)))
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Result.failure(Exception(context.getString(R.string.save_error, e.message)))
-        }
-    }
+    val actualFileName = if (fileName.endsWith(".txt")) fileName else "$fileName.txt"
+    return insertMediaFile(context, actualFileName, "text/plain") { output ->
+        output.write(text.toByteArray(Charsets.UTF_8))
+    }.map { actualFileName }
 }
 
 /**
@@ -130,31 +217,20 @@ suspend fun savePdfToDevice(
 
     return withContext(Dispatchers.IO) {
         try {
-            val fileName = documentName.toSafeFileName(".pdf")
-            val resolver = context.contentResolver
-            
-            val contentValues = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-                put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS + "/HeraScan")
-                }
-            }
+            val fileName = resolveDocumentName(documentName, "HeraScan").toSafeFileName(".pdf")
+            val inputStream = context.contentResolver.openInputStream(sourceUri)
+                ?: return@withContext Result.failure(
+                    Exception(context.getString(R.string.save_pdf_not_found))
+                )
 
-            val uri = resolver.insert(MediaStore.Files.getContentUri("external"), contentValues)
-            if (uri != null) {
-                resolver.openOutputStream(uri)?.use { outputStream ->
-                    resolver.openInputStream(sourceUri)?.use { inputStream ->
-                        inputStream.copyTo(outputStream)
-                    }
-                }
-                Result.success(fileName)
-            } else {
-                Result.failure(Exception(context.getString(R.string.save_failed)))
+            inputStream.use { input ->
+                insertMediaFile(context, fileName, "application/pdf") { output ->
+                    input.copyTo(output)
+                }.map { fileName }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
-            Result.failure(Exception(context.getString(R.string.save_error, e.message)))
+            Logger.e(TAG, "PDF kaydetme başarısız", e)
+            Result.failure(Exception(context.getString(R.string.save_failed)))
         }
     }
 }

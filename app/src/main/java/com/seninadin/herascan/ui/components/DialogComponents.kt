@@ -33,8 +33,12 @@ import androidx.compose.ui.unit.sp
 import com.seninadin.herascan.MainViewModel
 import com.seninadin.herascan.R
 import com.seninadin.herascan.ScanUiState
+import com.seninadin.herascan.utils.DateFormats
+import com.seninadin.herascan.utils.resolveDocumentName
 import com.seninadin.herascan.utils.saveTextToFile
+import com.seninadin.herascan.utils.rememberStoragePermissionGate
 import kotlinx.coroutines.launch
+import java.util.Date
 
 // ════════════════════════════════════════════════════════════════
 //  Boş Durum Ekranı
@@ -191,7 +195,11 @@ private fun EmptyStateIllustration() {
 // ════════════════════════════════════════════════════════════════
 
 @Composable
-fun OcrResultContent(extractedText: String, context: Context) {
+fun OcrResultContent(
+    extractedText: String,
+    documentName: String,
+    context: Context
+) {
     val scope = rememberCoroutineScope()
     Column(
         modifier = Modifier
@@ -208,7 +216,7 @@ fun OcrResultContent(extractedText: String, context: Context) {
             Box(
                 modifier = Modifier
                     .size(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(MaterialTheme.shapes.medium)
                     .background(MaterialTheme.colorScheme.tertiaryContainer),
                 contentAlignment = Alignment.Center
             ) {
@@ -229,7 +237,7 @@ fun OcrResultContent(extractedText: String, context: Context) {
 
         // Metin kutusu
         Surface(
-            shape = RoundedCornerShape(12.dp),
+            shape = MaterialTheme.shapes.medium,
             color = MaterialTheme.colorScheme.surfaceVariant,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             modifier = Modifier
@@ -257,6 +265,7 @@ fun OcrResultContent(extractedText: String, context: Context) {
             modifier = Modifier.fillMaxWidth()
         ) {
             val copyMsg = stringResource(R.string.text_copied)
+            val legacyNotice = stringResource(R.string.clipboard_legacy_notice)
 
             // Kopyala
             OutlinedButton(
@@ -270,9 +279,14 @@ fun OcrResultContent(extractedText: String, context: Context) {
                         }
                     }
                     clipboard.setPrimaryClip(clip)
-                    Toast.makeText(context, copyMsg, Toast.LENGTH_SHORT).show()
+                    val msg = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        copyMsg
+                    } else {
+                        "$copyMsg $legacyNotice"
+                    }
+                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                 },
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.medium,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 modifier = Modifier.weight(1f).height(44.dp)
             ) {
@@ -298,7 +312,7 @@ fun OcrResultContent(extractedText: String, context: Context) {
                     }
                     context.startActivity(Intent.createChooser(intent, shareChooser))
                 },
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.weight(1f).height(44.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
@@ -320,23 +334,32 @@ fun OcrResultContent(extractedText: String, context: Context) {
         Spacer(Modifier.height(10.dp))
 
         val saveMsg = stringResource(R.string.save_text_success)
+        val saveDeniedMsg = stringResource(R.string.save_permission_denied)
+        val defaultName = stringResource(R.string.default_doc_name)
+        val runSaveWithPermission = rememberStoragePermissionGate(
+            onDenied = { Toast.makeText(context, saveDeniedMsg, Toast.LENGTH_SHORT).show() }
+        )
         OutlinedButton(
             onClick = {
-                scope.launch {
-                    val result = saveTextToFile(context, extractedText, "HeraScan_OCR")
-                    if (result.isSuccess) {
-                        Toast.makeText(context, saveMsg, Toast.LENGTH_SHORT).show()
-                    } else {
-                        val error = result.exceptionOrNull()?.message
-                        Toast.makeText(
-                            context,
-                            error ?: context.getString(R.string.save_failed),
-                            Toast.LENGTH_SHORT
-                        ).show()
+                runSaveWithPermission {
+                    scope.launch {
+                        val base = resolveDocumentName(documentName, defaultName)
+                        val fileName = "${base}_${DateFormats.formatFileTimestamp(Date())}"
+                        val result = saveTextToFile(context, extractedText, fileName)
+                        if (result.isSuccess) {
+                            Toast.makeText(context, saveMsg, Toast.LENGTH_SHORT).show()
+                        } else {
+                            val error = result.exceptionOrNull()?.message
+                            Toast.makeText(
+                                context,
+                                error ?: context.getString(R.string.save_failed),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     }
                 }
             },
-            shape = RoundedCornerShape(12.dp),
+            shape = MaterialTheme.shapes.medium,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             modifier = Modifier.fillMaxWidth().height(44.dp)
         ) {
@@ -365,8 +388,8 @@ fun RenameDocumentDialog(
     context: Context
 ) {
     AlertDialog(
-        onDismissRequest = { viewModel.saveCurrentScanToHistory() },
-        shape = RoundedCornerShape(20.dp),
+        onDismissRequest = { viewModel.dismissRenameDialog() },
+        shape = MaterialTheme.shapes.extraLarge,
         containerColor = MaterialTheme.colorScheme.surface,
         title = {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -394,7 +417,7 @@ fun RenameDocumentDialog(
                     )
                 },
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -407,7 +430,7 @@ fun RenameDocumentDialog(
         confirmButton = {
             Button(
                 onClick = { viewModel.saveCurrentScanToHistory() },
-                shape = RoundedCornerShape(10.dp),
+                shape = MaterialTheme.shapes.medium,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 )
@@ -420,7 +443,7 @@ fun RenameDocumentDialog(
         },
         dismissButton = {
             TextButton(
-                onClick = { viewModel.saveCurrentScanToHistory() }
+                onClick = { viewModel.dismissRenameDialog() }
             ) {
                 Text(
                     text = stringResource(R.string.cancel),

@@ -13,7 +13,13 @@ import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.seninadin.herascan.data.ScanRepository
 import com.seninadin.herascan.db.ScanHistory
+import com.seninadin.herascan.utils.Logger
+import com.seninadin.herascan.utils.copyUriToPrivateStorage
+import com.seninadin.herascan.utils.resolveDocumentName
+import com.seninadin.herascan.utils.toSafeFileName
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,6 +52,11 @@ sealed class ScanUiEvent {
     data class ShowToastRes(val resId: Int) : ScanUiEvent()
 }
 
+private const val TAG = "MainViewModel"
+
+/** Çok sayfalı OCR metinlerini birleştiren ayraç (TXT çıktısına da yazılır). */
+private const val PAGE_SEPARATOR = "\n\n---\n\n"
+
 class MainViewModel(
     application: Application,
     private val repository: ScanRepository
@@ -58,8 +69,14 @@ class MainViewModel(
     private val _uiState = MutableStateFlow(ScanUiState())
     val uiState: StateFlow<ScanUiState> = _uiState.asStateFlow()
 
-    private val _uiEvents = MutableSharedFlow<ScanUiEvent>()
+    private val _uiEvents = MutableSharedFlow<ScanUiEvent>(extraBufferCapacity = 1)
     val uiEvents = _uiEvents.asSharedFlow()
+
+    /** Çalışan OCR işi — yeni tarama/OCR eskisini iptal eder (stale-response engeli). */
+    private var ocrJob: Job? = null
+
+    /** Kaydet çift-dokunuş guard'ı (duplicate history engeli). */
+    private var isSaving = false
 
     val pagedScans: Flow<PagingData<ScanHistory>> = repository.getScansPaged()
         .cachedIn(viewModelScope)
@@ -92,12 +109,18 @@ class MainViewModel(
     }
 
     fun openScanFromHistory(scan: ScanHistory) {
+        val thumbnailUris = scan.thumbnailUri?.let { raw ->
+            runCatching { Uri.parse(raw) }.getOrNull()?.let { listOf(it) }
+        } ?: emptyList()
+        val pdf = scan.pdfUri?.let { raw ->
+            runCatching { Uri.parse(raw) }.getOrNull()
+        }
         _uiState.update {
             it.copy(
-                imageUris = if (scan.thumbnailUri != null) listOf(Uri.parse(scan.thumbnailUri)) else emptyList(),
-                pdfUri = scan.pdfUri?.let { Uri.parse(it) },
+                imageUris = thumbnailUris,
+                pdfUri = pdf,
                 documentName = scan.title,
-                showPdfViewer = scan.pdfUri != null
+                showPdfViewer = pdf != null
             )
         }
     }
@@ -106,27 +129,45 @@ class MainViewModel(
         _uiState.update { it.copy(showPdfViewer = false) }
     }
 
+    /** Tek görseli ML Kit ile yazıya çevirir (iki OCR akışının ortak çekirdeği — DUP-01). */
+    private suspend fun recognizeImage(imageUri: Uri): String {
+        val context = getApplication<Application>()
+        val image = withContext(Dispatchers.IO) {
+            InputImage.fromFilePath(context, imageUri)
+        }
+        return suspendCancellableCoroutine { continuation ->
+            textRecognizer.process(image)
+                .addOnSuccessListener { visionText ->
+                    continuation.resume(visionText.text)
+                }
+                .addOnFailureListener { e ->
+                    continuation.resumeWithException(e)
+                }
+        }
+    }
+
+    private fun showOcrError() {
+        _uiState.update {
+            it.copy(
+                extractedText = "",
+                isOcrLoading = false,
+                showBottomSheet = false
+            )
+        }
+        _uiEvents.tryEmit(ScanUiEvent.ShowToastRes(R.string.ocr_failed))
+    }
+
     fun extractTextFromImage(imageUri: Uri) {
-        viewModelScope.launch {
+        ocrJob?.cancel()
+        ocrJob = viewModelScope.launch {
             _uiState.update { it.copy(isOcrLoading = true, extractedText = "", ocrProgress = 0, ocrTotal = 1) }
-            val context = getApplication<Application>()
-            
+            val started = System.currentTimeMillis()
+            Logger.d(TAG, "OCR başladı (tek sayfa)")
+
             try {
-                val image = withContext(Dispatchers.IO) {
-                    InputImage.fromFilePath(context, imageUri)
-                }
-                
-                val result = suspendCancellableCoroutine<String> { continuation ->
-                    textRecognizer.process(image)
-                        .addOnSuccessListener { visionText ->
-                            continuation.resume(visionText.text)
-                        }
-                        .addOnFailureListener { e ->
-                            continuation.resumeWithException(e)
-                        }
-                }
-                
-                _uiState.update { 
+                val result = recognizeImage(imageUri)
+                ensureActive()
+                _uiState.update {
                     it.copy(
                         extractedText = result,
                         isOcrLoading = false,
@@ -136,15 +177,11 @@ class MainViewModel(
                 if (result.isBlank()) {
                     _uiEvents.emit(ScanUiEvent.ShowToastRes(R.string.text_not_found))
                 }
-                
+                Logger.d(TAG, "OCR bitti (tek sayfa, ${System.currentTimeMillis() - started} ms)")
             } catch (e: Exception) {
-                _uiState.update { 
-                    it.copy(
-                        extractedText = context.getString(R.string.error_occurred, e.message.toString()),
-                        isOcrLoading = false,
-                        showBottomSheet = true
-                    )
-                }
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                Logger.e(TAG, "OCR başarısız (tek sayfa)", e)
+                showOcrError()
             }
         }
     }
@@ -152,60 +189,55 @@ class MainViewModel(
     fun extractTextFromAllImages() {
         val imageUris = _uiState.value.imageUris
         if (imageUris.isEmpty()) return
-        
-        viewModelScope.launch {
+
+        ocrJob?.cancel()
+        ocrJob = viewModelScope.launch {
             _uiState.update { it.copy(isOcrLoading = true, extractedText = "", ocrProgress = 0, ocrTotal = imageUris.size) }
             val context = getApplication<Application>()
-            
+            val started = System.currentTimeMillis()
+            Logger.d(TAG, "OCR başladı (${imageUris.size} sayfa)")
+
             try {
                 val results = mutableListOf<String>()
-                
+                var failedPages = 0
+
                 imageUris.forEachIndexed { index, uri ->
+                    ensureActive()
                     try {
-                        val image = withContext(Dispatchers.IO) {
-                            InputImage.fromFilePath(context, uri)
-                        }
-                        
-                        val result = suspendCancellableCoroutine<String> { continuation ->
-                            textRecognizer.process(image)
-                                .addOnSuccessListener { visionText ->
-                                    continuation.resume(visionText.text)
-                                }
-                                .addOnFailureListener { e ->
-                                    continuation.resumeWithException(e)
-                                }
-                        }
-                        
+                        val result = recognizeImage(uri)
                         results.add(result)
                         _uiState.update { it.copy(ocrProgress = index + 1) }
-                        
                     } catch (e: Exception) {
+                        if (e is kotlinx.coroutines.CancellationException) throw e
+                        Logger.e(TAG, "OCR sayfa başarısız (index=$index)", e)
                         results.add("")
+                        failedPages++
                     }
                 }
-                
-                val combinedText = results.filter { it.isNotBlank() }.joinToString("\n\n---\n\n")
-                
-                _uiState.update { 
+
+                val combinedText = results.filter { it.isNotBlank() }.joinToString(PAGE_SEPARATOR)
+
+                _uiState.update {
                     it.copy(
                         extractedText = combinedText,
                         isOcrLoading = false,
                         showBottomSheet = combinedText.isNotBlank()
                     )
                 }
-                
-                if (combinedText.isBlank()) {
-                    _uiEvents.emit(ScanUiEvent.ShowToastRes(R.string.text_not_found))
+
+                when {
+                    failedPages > 0 && combinedText.isBlank() ->
+                        _uiEvents.emit(ScanUiEvent.ShowToast(context.getString(R.string.ocr_all_pages_failed)))
+                    failedPages > 0 ->
+                        _uiEvents.emit(ScanUiEvent.ShowToast(context.getString(R.string.ocr_pages_failed, failedPages)))
+                    combinedText.isBlank() ->
+                        _uiEvents.emit(ScanUiEvent.ShowToastRes(R.string.text_not_found))
                 }
-                
+                Logger.d(TAG, "OCR bitti (${imageUris.size} sayfa, $failedPages hata, ${System.currentTimeMillis() - started} ms)")
             } catch (e: Exception) {
-                _uiState.update { 
-                    it.copy(
-                        extractedText = context.getString(R.string.error_occurred, e.message.toString()),
-                        isOcrLoading = false,
-                        showBottomSheet = true
-                    )
-                }
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                Logger.e(TAG, "OCR başarısız (çok sayfa)", e)
+                showOcrError()
             }
         }
     }
@@ -213,26 +245,64 @@ class MainViewModel(
     fun saveCurrentScanToHistory() {
         val currentState = _uiState.value
         if (currentState.imageUris.isEmpty() && currentState.pdfUri == null) return
-        
+        if (isSaving) return
+        val context = getApplication<Application>()
+        val fallbackName = context.getString(R.string.default_doc_name)
+        val resolvedName = resolveDocumentName(currentState.documentName, fallbackName)
+        if (currentState.documentName.isBlank()) {
+            _uiEvents.tryEmit(ScanUiEvent.ShowToastRes(R.string.doc_name_required))
+            return
+        }
+
+        isSaving = true
         viewModelScope.launch(Dispatchers.IO) {
-            val history = ScanHistory(
-                title = currentState.documentName,
-                dateMillis = System.currentTimeMillis(),
-                pdfUri = currentState.pdfUri?.toString(),
-                thumbnailUri = currentState.imageUris.firstOrNull()?.toString()
-            )
-            repository.insert(history)
-            
-            withContext(Dispatchers.Main) {
-                dismissRenameDialog()
-                _uiEvents.emit(ScanUiEvent.ShowToastRes(R.string.saved_to_history))
+            try {
+                // Scanner URI'leri kalıcı değil — geçmiş restart sonrası da açılsın
+                // diye PDF ve kapağı app-private alana kopyala, DB'ye kopyayı yaz.
+                val safeBase = resolvedName.toSafeFileName("")
+                    .removeSuffix(".")
+                    .ifBlank { "HeraScan" }
+                val stablePdfUri = currentState.pdfUri?.let { uri ->
+                    copyUriToPrivateStorage(context, uri, "pdfs", "$safeBase.pdf")
+                        ?.toString() ?: uri.toString()
+                }
+                val stableThumbUri = currentState.imageUris.firstOrNull()?.let { uri ->
+                    copyUriToPrivateStorage(context, uri, "images", "${safeBase}_kapak.jpg")
+                        ?.toString() ?: uri.toString()
+                }
+                val history = ScanHistory(
+                    title = resolvedName,
+                    dateMillis = System.currentTimeMillis(),
+                    pdfUri = stablePdfUri,
+                    thumbnailUri = stableThumbUri
+                )
+                repository.insert(history)
+
+                withContext(Dispatchers.Main) {
+                    dismissRenameDialog()
+                    _uiEvents.emit(ScanUiEvent.ShowToastRes(R.string.saved_to_history))
+                }
+            } catch (e: Exception) {
+                Logger.e(TAG, "Geçmişe kayıt başarısız", e)
+                withContext(Dispatchers.Main) {
+                    _uiEvents.emit(ScanUiEvent.ShowToastRes(R.string.save_history_failed))
+                }
+            } finally {
+                isSaving = false
             }
         }
     }
 
     fun deleteScan(scan: ScanHistory) {
         viewModelScope.launch(Dispatchers.IO) {
-            repository.delete(scan)
+            try {
+                repository.delete(scan)
+            } catch (e: Exception) {
+                Logger.e(TAG, "Kayıt silinemedi (id=${scan.id})", e)
+                withContext(Dispatchers.Main) {
+                    _uiEvents.emit(ScanUiEvent.ShowToastRes(R.string.operation_failed))
+                }
+            }
         }
     }
 

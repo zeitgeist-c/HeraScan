@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -27,14 +26,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import com.seninadin.herascan.MainViewModel
 import com.seninadin.herascan.R
 import com.seninadin.herascan.ScanUiState
 import com.seninadin.herascan.utils.savePdfToDevice
+import com.seninadin.herascan.utils.rememberStoragePermissionGate
 import com.seninadin.herascan.utils.shareFile
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 // ════════════════════════════════════════════════════════════════
 //  Yardımcı Bileşenler
@@ -47,7 +47,7 @@ internal fun SectionLabel(
     modifier: Modifier = Modifier
 ) {
     Text(
-        text = text.uppercase(),
+        text = text.uppercase(Locale.getDefault()),
         style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.08.sp),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier
@@ -61,14 +61,13 @@ internal fun SectionLabel(
 private fun PageThumbnail(
     uri: Uri,
     index: Int,
-    isFirst: Boolean,
-    context: Context
+    isFirst: Boolean
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box {
             // Kart çerçevesi
             Card(
-                shape = RoundedCornerShape(8.dp),
+                shape = MaterialTheme.shapes.small,
                 border = BorderStroke(
                     width = if (isFirst) 2.dp else 1.dp,
                     color = if (isFirst) MaterialTheme.colorScheme.primary
@@ -78,11 +77,7 @@ private fun PageThumbnail(
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(uri)
-                        .crossfade(true)
-                        .size(144, 200)
-                        .build(),
+                    model = rememberScanImageRequest(uri, 144, 200),
                     contentDescription = stringResource(R.string.scanned_page, index + 1),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
@@ -93,7 +88,7 @@ private fun PageThumbnail(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(4.dp)
-                    .clip(RoundedCornerShape(4.dp))
+                    .clip(MaterialTheme.shapes.extraSmall)
                     .background(
                         if (isFirst) MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
@@ -127,7 +122,7 @@ private fun PdfBanner(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.secondaryContainer,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f)),
         modifier = modifier.fillMaxWidth()
@@ -141,7 +136,7 @@ private fun PdfBanner(
             Box(
                 modifier = Modifier
                     .size(32.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(MaterialTheme.shapes.small)
                     .background(MaterialTheme.colorScheme.secondary),
                 contentAlignment = Alignment.Center
             ) {
@@ -171,7 +166,7 @@ private fun PdfBanner(
             // Görüntüle butonu
             FilledTonalButton(
                 onClick = onView,
-                shape = RoundedCornerShape(8.dp),
+                shape = MaterialTheme.shapes.small,
                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
                 modifier = Modifier.height(30.dp),
                 colors = ButtonDefaults.filledTonalButtonColors(
@@ -235,7 +230,7 @@ private fun ActionCard(
 
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         color = containerColor,
         border = BorderStroke(1.dp, borderColor),
         enabled = enabled,
@@ -248,7 +243,7 @@ private fun ActionCard(
             Box(
                 modifier = Modifier
                     .size(28.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(MaterialTheme.shapes.small)
                     .background(iconBg),
                 contentAlignment = Alignment.Center
             ) {
@@ -287,7 +282,7 @@ private fun OcrActionRow(
             if (uiState.imageUris.size > 1) viewModel.extractTextFromAllImages()
             else uiState.imageUris.firstOrNull()?.let { viewModel.extractTextFromImage(it) }
         },
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.6f)),
         enabled = !uiState.isOcrLoading,
@@ -302,7 +297,7 @@ private fun OcrActionRow(
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(MaterialTheme.shapes.medium)
                     .background(MaterialTheme.colorScheme.tertiaryContainer),
                 contentAlignment = Alignment.Center
             ) {
@@ -370,7 +365,7 @@ fun ActiveScanSection(
 
     // ── Tarama Kartı ──────────────────────────────────────────────
     OutlinedCard(
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         colors = CardDefaults.outlinedCardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -396,7 +391,7 @@ fun ActiveScanSection(
                 )
                 Spacer(Modifier.width(8.dp))
                 Surface(
-                    shape = RoundedCornerShape(20.dp),
+                    shape = MaterialTheme.shapes.extraLarge,
                     color = MaterialTheme.colorScheme.primaryContainer
                 ) {
                     Text(
@@ -419,8 +414,7 @@ fun ActiveScanSection(
                     PageThumbnail(
                         uri = uri,
                         index = index,
-                        isFirst = index == 0,
-                        context = context
+                        isFirst = index == 0
                     )
                 }
             }
@@ -443,6 +437,10 @@ fun ActiveScanSection(
     SectionLabel(stringResource(R.string.actions))
 
     val pdfNotFoundMsg = stringResource(R.string.pdf_not_found)
+    val pdfSaveDeniedMsg = stringResource(R.string.save_permission_denied)
+    val runSaveWithPermission = rememberStoragePermissionGate(
+        onDenied = { Toast.makeText(context, pdfSaveDeniedMsg, Toast.LENGTH_SHORT).show() }
+    )
 
     // Satır 1: PDF Paylaş · Cihaza Kaydet
     Row(
@@ -458,22 +456,9 @@ fun ActiveScanSection(
             onClick = {
                 uiState.pdfUri?.let { uri ->
                     scope.launch {
-                        val result = shareFile(
-                            context,
-                            uri,
-                            "application/pdf",
-                            uiState.documentName
+                        context.launchShareResult(
+                            shareFile(context, uri, "application/pdf", uiState.documentName)
                         )
-                        if (result.isSuccess) {
-                            result.getOrNull()?.let { context.startActivity(it) }
-                        } else {
-                            val error = result.exceptionOrNull()?.message
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.share_error, error),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
                     }
                 } ?: Toast.makeText(context, pdfNotFoundMsg, Toast.LENGTH_SHORT).show()
             }
@@ -485,26 +470,28 @@ fun ActiveScanSection(
             style = ActionStyle.Secondary,
             modifier = Modifier.weight(1f),
             onClick = {
-                scope.launch {
-                    val result = savePdfToDevice(
-                        context,
-                        uiState.pdfUri,
-                        uiState.documentName
-                    )
-                    if (result.isSuccess) {
-                        val fileName = result.getOrNull()
-                        Toast.makeText(
+                runSaveWithPermission {
+                    scope.launch {
+                        val result = savePdfToDevice(
                             context,
-                            context.getString(R.string.save_success, fileName),
-                            Toast.LENGTH_LONG
-                        ).show()
-                    } else {
-                        val error = result.exceptionOrNull()?.message
-                        Toast.makeText(
-                            context,
-                            error ?: context.getString(R.string.save_failed),
-                            Toast.LENGTH_SHORT
-                        ).show()
+                            uiState.pdfUri,
+                            uiState.documentName
+                        )
+                        if (result.isSuccess) {
+                            val fileName = result.getOrNull()
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.save_success, fileName),
+                                Toast.LENGTH_LONG
+                            ).show()
+                        } else {
+                            val error = result.exceptionOrNull()?.message
+                            Toast.makeText(
+                                context,
+                                error ?: context.getString(R.string.save_failed),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     }
                 }
             }
@@ -527,22 +514,9 @@ fun ActiveScanSection(
             onClick = {
                 if (uiState.imageUris.isNotEmpty()) {
                     scope.launch {
-                        val result = shareFile(
-                            context,
-                            uiState.imageUris.first(),
-                            "image/jpeg",
-                            uiState.documentName
+                        context.launchShareResult(
+                            shareFile(context, uiState.imageUris.first(), "image/jpeg", uiState.documentName)
                         )
-                        if (result.isSuccess) {
-                            result.getOrNull()?.let { context.startActivity(it) }
-                        } else {
-                            val error = result.exceptionOrNull()?.message
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.share_error, error),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
                     }
                 }
             }

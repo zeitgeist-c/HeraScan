@@ -33,16 +33,13 @@ import com.seninadin.herascan.data.ScanRepository
 import com.seninadin.herascan.db.HeraScanDatabase
 import com.seninadin.herascan.ui.components.*
 import com.seninadin.herascan.ui.theme.HeraScanTheme
+import com.seninadin.herascan.utils.DateFormats
 import com.seninadin.herascan.utils.cleanupTempFiles
-import com.seninadin.herascan.utils.savePdfToDevice
-import com.seninadin.herascan.utils.shareFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.tasks.await
-import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -103,7 +100,6 @@ fun HeraScanApp() {
             .build()
     }
     val scanner   = remember { GmsDocumentScanning.getClient(scannerOptions) }
-    val formatter = remember { SimpleDateFormat("dd MMMM yyyy HH:mm", Locale("tr", "TR")) }
 
     val cancelMsg           = stringResource(R.string.scan_cancelled)
     val defaultFileNamePrefix = stringResource(R.string.default_doc_name)
@@ -116,7 +112,7 @@ fun HeraScanApp() {
             scanningResult?.let { scanResult ->
                 val images = scanResult.pages?.map { it.imageUri } ?: emptyList()
                 val pdf    = scanResult.pdf?.uri
-                val name   = defaultFileNamePrefix + " " + formatter.format(Date())
+                val name   = defaultFileNamePrefix + " " + DateFormats.formatScanTimestamp(Date())
                 viewModel.updateScanResults(images, pdf, name)
             }
         } else {
@@ -134,7 +130,7 @@ fun HeraScanApp() {
                     ) {
                         // Logo işareti
                         Surface(
-                            shape = RoundedCornerShape(9.dp),
+                            shape = MaterialTheme.shapes.small,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(28.dp)
                         ) {
@@ -168,10 +164,12 @@ fun HeraScanApp() {
             )
         },
         floatingActionButton = {
-            val failMsg = stringResource(R.string.scanner_failed)
+            val failMsg = stringResource(R.string.scanner_start_failed)
+            var isLaunching by remember { mutableStateOf(false) }
             ExtendedFloatingActionButton(
                 onClick = {
-                    if (activity == null) return@ExtendedFloatingActionButton
+                    if (activity == null || isLaunching) return@ExtendedFloatingActionButton
+                    isLaunching = true
                     scope.launch {
                         try {
                             val intentSender = withContext(Dispatchers.IO) {
@@ -179,7 +177,9 @@ fun HeraScanApp() {
                             }
                             scanLauncher.launch(IntentSenderRequest.Builder(intentSender).build())
                         } catch (e: Exception) {
-                            Toast.makeText(context, String.format(failMsg, e.message), Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, failMsg, Toast.LENGTH_LONG).show()
+                        } finally {
+                            isLaunching = false
                         }
                     }
                 },
@@ -197,7 +197,7 @@ fun HeraScanApp() {
                 },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor   = MaterialTheme.colorScheme.onPrimary,
-                shape          = RoundedCornerShape(16.dp)
+                shape          = MaterialTheme.shapes.large
             )
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -256,7 +256,7 @@ fun HeraScanApp() {
                     }
                 }
             ) {
-                OcrResultContent(uiState.extractedText, context)
+                OcrResultContent(uiState.extractedText, uiState.documentName, context)
             }
         }
 

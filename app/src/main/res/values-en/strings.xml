@@ -2,7 +2,6 @@
 <resources>
     <string name="app_name">HeraScan</string>
     <string name="scan_cancelled">Scan cancelled.</string>
-    <string name="scanner_failed">Scanner failed: %1$s</string>
     <string name="new_scan">New Scan</string>
     <string name="new_scan_desc">New Scan</string>
     <string name="current_scan">Current Scan</string>
@@ -30,7 +29,6 @@
     <string name="save_pdf_not_found">No PDF to save.</string>
     <string name="save_success">%1$s saved to Documents folder.</string>
     <string name="save_failed">Could not save file.</string>
-    <string name="save_error">Save Error: %1$s</string>
     <string name="default_doc_name">Document</string>
     <string name="text_not_found">No text found.</string>
     <string name="extracting_all">Reading all pages</string>

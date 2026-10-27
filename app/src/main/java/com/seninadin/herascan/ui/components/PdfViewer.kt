@@ -4,6 +4,7 @@ package com.seninadin.herascan.ui.components
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
+import android.os.ParcelFileDescriptor
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -34,6 +35,13 @@ import kotlinx.coroutines.withContext
 private const val MAX_PDF_DIMENSION = 2048
 private const val TARGET_WIDTH_DP = 400
 
+/**
+ * Açılmış PDF oturumu (fd + renderer). Main thread'de açılmaz:
+ * `openFileDescriptor` disk I/O, `PdfRenderer` kurulumu dosya ayrıştırma yapar;
+ * büyük PDF'lerde kare düşmesi/ANR üretiyordu. Sahibi PdfViewerScreen'dir.
+ */
+private class PdfSession(val fd: ParcelFileDescriptor, val renderer: PdfRenderer)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PdfViewerScreen(
@@ -46,37 +54,36 @@ fun PdfViewerScreen(
     var pageCount by remember { mutableIntStateOf(0) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
+    var session by remember(pdfUri) { mutableStateOf<PdfSession?>(null) }
 
-    val pdfFd = remember(pdfUri) {
-        try {
-            context.contentResolver.openFileDescriptor(pdfUri, "r")
-        } catch (e: Exception) {
-            null
+    LaunchedEffect(pdfUri) {
+        isLoading = true
+        error = null
+        val loaded = withContext(Dispatchers.IO) {
+            runCatching {
+                val fd = context.contentResolver.openFileDescriptor(pdfUri, "r")
+                    ?: return@runCatching null
+                try {
+                    PdfSession(fd, PdfRenderer(fd))
+                } catch (e: Exception) {
+                    runCatching { fd.close() }
+                    throw e
+                }
+            }.getOrNull()
         }
-    }
-
-    val renderer = remember(pdfUri, pdfFd) {
-        try {
-            pdfFd?.let { PdfRenderer(it) }
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    DisposableEffect(pdfFd, renderer) {
-        onDispose {
-            renderer?.close()
-            pdfFd?.close()
-        }
-    }
-
-    LaunchedEffect(renderer) {
-        if (renderer != null) {
-            pageCount = renderer.pageCount
-        } else {
-            error = context.getString(R.string.pdf_open_error)
-        }
+        session = loaded
+        pageCount = loaded?.renderer?.pageCount ?: 0
+        if (loaded == null) error = context.getString(R.string.pdf_open_error)
         isLoading = false
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            session?.let { open ->
+                runCatching { open.renderer.close() }
+                runCatching { open.fd.close() }
+            }
+        }
     }
 
     BackHandler(onBack = onClose)
@@ -153,7 +160,7 @@ fun PdfViewerScreen(
                             key = { index, _ -> index }
                         ) { index, _ ->
                             PdfPageCard(
-                                renderer = renderer,
+                                renderer = session?.renderer,
                                 pageIndex = index,
                                 totalPages = pageCount,
                                 contentDescription = stringResource(R.string.page_number, index + 1)

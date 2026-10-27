@@ -59,8 +59,11 @@ suspend fun cleanupTempFiles(context: Context) {
 }
 
 /**
- * Kaynak URI'yi app-private cache'e kopyalar (geçmiş kayıtlarının
- * cihaz yeniden başlatıldıktan sonra da açılması için).
+ * Kaynak URI'yi app-private kalıcı alana (filesDir) kopyalar; geçmiş kayıtları
+ * hem cihaz yeniden başlatıldıktan sonra hem de [cleanupTempFiles] sonrası açılır.
+ * cacheDir kullanılmaz: cache temizliği 24 saatten eski kayıtları siliyordu.
+ * Dosya adı kayıt başına benzersizleştirilir: aynı adlı iki belge birbirinin
+ * kopyasını ezmesin (yanlış PDF gösterme / silmede veri kaybı).
  * Dönüş: kopyanın content URI'si, ya da kopya başarısızsa null.
  */
 suspend fun copyUriToPrivateStorage(
@@ -71,9 +74,9 @@ suspend fun copyUriToPrivateStorage(
 ): Uri? {
     return withContext(Dispatchers.IO) {
         runCatching {
-            val folder = File(context.cacheDir, folderName)
+            val folder = File(context.filesDir, folderName)
             if (!folder.exists()) folder.mkdirs()
-            val dest = File(folder, fileName)
+            val dest = File(folder, uniqueFileName(fileName))
             context.contentResolver.openInputStream(sourceUri)?.use { input ->
                 FileOutputStream(dest).use { output -> input.copyTo(output) }
             } ?: return@runCatching null
@@ -85,6 +88,29 @@ suspend fun copyUriToPrivateStorage(
         }.onFailure { e ->
             Logger.e(TAG, "Private kopya başarısız: $folderName/$fileName", e)
         }.getOrNull()
+    }
+}
+
+/**
+ * Geçmiş kaydına ait app-private kopyaları siler (filesDir/images, filesDir/pdfs).
+ * Yalnızca kendi kopyalarımıza dokunur: dış (scanner/MediaStore) URI'leri ve
+ * kullanıcının cihaza kaydettiği dosyalar korunur.
+ */
+fun deletePrivateCopies(context: Context, vararg uriStrings: String?) {
+    val root = context.filesDir.canonicalFile
+    val folders = listOf("images", "pdfs").map { File(root, it) }
+    uriStrings.forEach uriLoop@{ raw ->
+        if (raw.isNullOrBlank()) return@uriLoop
+        val uri = runCatching { Uri.parse(raw) }.getOrNull() ?: return@uriLoop
+        if (uri.scheme != "content") return@uriLoop
+        val name = uri.lastPathSegment ?: return@uriLoop
+        folders.forEach { folder ->
+            val target = runCatching { File(folder, name).canonicalFile }.getOrNull()
+            if (target != null && target.parentFile == folder.canonicalFile && target.isFile) {
+                runCatching { target.delete() }
+                    .onFailure { e -> Logger.e(TAG, "Private kopya silinemedi: ${target.name}", e) }
+            }
+        }
     }
 }
 
@@ -180,8 +206,14 @@ private suspend fun insertMediaFile(
             val uri = resolver.insert(MediaStore.Files.getContentUri("external"), contentValues)
             val outputStream = uri?.let { resolver.openOutputStream(it) }
             if (uri != null && outputStream != null) {
-                outputStream.use { write(it) }
-                Result.success(Unit)
+                try {
+                    outputStream.use { write(it) }
+                    Result.success(Unit)
+                } catch (e: Exception) {
+                    // Yarım kalan dosya cihazda görünmesin: MediaStore satırını geri al.
+                    runCatching { resolver.delete(uri, null, null) }
+                    throw e
+                }
             } else {
                 if (uri != null) resolver.delete(uri, null, null)
                 Result.failure(Exception(context.getString(R.string.save_failed)))
@@ -195,9 +227,11 @@ private suspend fun insertMediaFile(
 
 /**
  * OCR metnini TXT dosyası olarak cihaza kaydeder.
+ * Ad, MediaStore DISPLAY_NAME'e yazılmadan önce dosya sistemi için güvenli hale
+ * getirilir (`:` `/` gibi karakterler kaydı bozuyordu); PDF kaydıyla aynı sözleşme.
  */
 suspend fun saveTextToFile(context: Context, text: String, fileName: String): Result<String> {
-    val actualFileName = if (fileName.endsWith(".txt")) fileName else "$fileName.txt"
+    val actualFileName = fileName.toSafeFileName(".txt")
     return insertMediaFile(context, actualFileName, "text/plain") { output ->
         output.write(text.toByteArray(Charsets.UTF_8))
     }.map { actualFileName }
@@ -232,6 +266,19 @@ suspend fun savePdfToDevice(
             Logger.e(TAG, "PDF kaydetme başarısız", e)
             Result.failure(Exception(context.getString(R.string.save_failed)))
         }
+    }
+}
+
+/**
+ * Dosya adını klasörde çakışmayacak biçimde benzersizleştirir: `ad.pdf` →
+ * `ad_ab12cd34.pdf`. Aynı adlı iki tarama birbirinin private kopyasını ezmesin.
+ */
+internal fun uniqueFileName(fileName: String, suffix: String = UUID.randomUUID().toString().take(8)): String {
+    val dot = fileName.lastIndexOf('.')
+    return if (dot > 0) {
+        "${fileName.substring(0, dot)}_$suffix${fileName.substring(dot)}"
+    } else {
+        "${fileName}_$suffix"
     }
 }
 

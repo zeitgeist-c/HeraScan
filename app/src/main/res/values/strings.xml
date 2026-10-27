@@ -2,7 +2,6 @@
 <resources>
     <string name="app_name">HeraScan</string>
     <string name="scan_cancelled">Tarama iptal edildi.</string>
-    <string name="scanner_failed">Tarayıcı başlatılamadı: %1$s</string>
     <string name="new_scan">Yeni Tara</string>
     <string name="new_scan_desc">Yeni Tarama</string>
     <string name="current_scan">Mevcut Tarama</string>
@@ -30,7 +29,6 @@
     <string name="save_pdf_not_found">Kaydedilecek PDF bulunamadı.</string>
     <string name="save_success">%1$s Belgeler klasörüne başarıyla kaydedildi.</string>
     <string name="save_failed">Dosya kaydedilemedi.</string>
-    <string name="save_error">Kayıt Hatası: %1$s</string>
     <string name="default_doc_name">Belge</string>
     <string name="text_not_found">Metin bulunamadı.</string>
     <string name="extracting_all">Tüm sayfalar okunuyor</string>

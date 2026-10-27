@@ -15,6 +15,7 @@ import com.seninadin.herascan.data.ScanRepository
 import com.seninadin.herascan.db.ScanHistory
 import com.seninadin.herascan.utils.Logger
 import com.seninadin.herascan.utils.copyUriToPrivateStorage
+import com.seninadin.herascan.utils.deletePrivateCopies
 import com.seninadin.herascan.utils.resolveDocumentName
 import com.seninadin.herascan.utils.toSafeFileName
 import kotlinx.coroutines.Dispatchers
@@ -297,6 +298,9 @@ class MainViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 repository.delete(scan)
+                // Kayda ait app-private kopyaları da sil; yoksa dosyalar sahipsiz kalıp
+                // uygulama verisi şişiyor (hiçbir yerden erişilemeyen PDF/kapak).
+                deletePrivateCopies(getApplication<Application>(), scan.pdfUri, scan.thumbnailUri)
             } catch (e: Exception) {
                 Logger.e(TAG, "Kayıt silinemedi (id=${scan.id})", e)
                 withContext(Dispatchers.Main) {

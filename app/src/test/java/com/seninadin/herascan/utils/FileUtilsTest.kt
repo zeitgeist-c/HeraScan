@@ -23,4 +23,19 @@ class FileUtilsTest {
     fun `blank document name uses a stable fallback`() {
         assertEquals("HeraScan.jpg", "   ".toSafeFileName(".jpg"))
     }
+
+    @Test
+    fun `unique file name keeps extension and adds suffix`() {
+        assertEquals("Fatura_abc123.pdf", uniqueFileName("Fatura.pdf", "abc123"))
+    }
+
+    @Test
+    fun `unique file name handles name without extension`() {
+        assertEquals("Fatura_abc123", uniqueFileName("Fatura", "abc123"))
+    }
+
+    @Test
+    fun `unique file name keeps leading dot names intact`() {
+        assertEquals(".pdf_abc123", uniqueFileName(".pdf", "abc123"))
+    }
 }

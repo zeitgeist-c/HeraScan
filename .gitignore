@@ -17,5 +17,10 @@ app/build/
 *.log
 .DS_Store
 
+# Release signing (asla commitlenmez)
+*.jks
+*.keystore
+keystore.properties
+
 # Room schema export
 schemas/

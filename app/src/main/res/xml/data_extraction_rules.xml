@@ -3,14 +3,14 @@
     <cloud-backup>
         <exclude domain="sharedpref" path="."/>
         <exclude domain="database" path="."/>
-        <!-- Taranan belgeler (PDF/kapak) buluta kopyalanmasın. -->
+        <!-- Scanned documents (PDF/covers) must not be copied to cloud. -->
         <exclude domain="file" path="pdfs/"/>
         <exclude domain="file" path="images/"/>
     </cloud-backup>
     <device-transfer>
         <exclude domain="sharedpref" path="."/>
         <exclude domain="database" path="."/>
-        <!-- Taranan belgeler cihaz aktarımıyla dışarı taşınmasın. -->
+        <!-- Scanned documents must not leave via device transfer. -->
         <exclude domain="file" path="pdfs/"/>
         <exclude domain="file" path="images/"/>
     </device-transfer>

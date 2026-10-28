@@ -2,7 +2,7 @@
 <full-backup-content>
     <exclude domain="sharedpref" path="."/>
     <exclude domain="database" path="."/>
-    <!-- Taranan belgeler (PDF/kapak) buluta/başka cihaza kopyalanmasın. -->
+    <!-- Scanned documents (PDF/covers) must not be copied to cloud/another device. -->
     <exclude domain="file" path="pdfs/"/>
     <exclude domain="file" path="images/"/>
 </full-backup-content>

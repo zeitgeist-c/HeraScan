@@ -33,6 +33,7 @@ import com.seninadin.herascan.data.ScanRepository
 import com.seninadin.herascan.db.HeraScanDatabase
 import com.seninadin.herascan.ui.components.*
 import com.seninadin.herascan.ui.theme.HeraScanTheme
+import com.seninadin.herascan.utils.AppLanguage
 import com.seninadin.herascan.utils.DateFormats
 import com.seninadin.herascan.utils.cleanupTempFiles
 import kotlinx.coroutines.Dispatchers
@@ -43,6 +44,8 @@ import java.util.Date
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Kayıtlı dil yoksa İngilizce: sistem dili varsayılanı ezemez.
+        AppLanguage.applyStoredOrDefault(this)
         super.onCreate(savedInstanceState)
         setContent {
             // dynamicColor = false → Marka renkleri korunur
@@ -76,6 +79,12 @@ fun HeraScanApp() {
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope      = rememberCoroutineScope()
+
+    // Dil: kalıcı tercih + ilk açılış adımı (tercih yoksa İngilizce).
+    var langMenuOpen by remember { mutableStateOf(false) }
+    var showLangOnboarding by remember { mutableStateOf(AppLanguage.savedTag(context) == null) }
+    var pendingLang by remember { mutableStateOf(AppLanguage.DEFAULT) }
+    val activeLang = AppLanguage.currentTag(context)
 
     // Toast olayları
     LaunchedEffect(viewModel.uiEvents) {
@@ -160,7 +169,34 @@ fun HeraScanApp() {
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
-                )
+                ),
+                actions = {
+                    IconButton(onClick = { langMenuOpen = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Language,
+                            contentDescription = stringResource(R.string.language_title)
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = langMenuOpen,
+                        onDismissRequest = { langMenuOpen = false }
+                    ) {
+                        AppLanguage.LANGUAGES.forEach { (code, _, label) ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = if (code == activeLang) "● $label" else label,
+                                        fontWeight = if (code == activeLang) FontWeight.SemiBold else null
+                                    )
+                                },
+                                onClick = {
+                                    langMenuOpen = false
+                                    if (code != activeLang) AppLanguage.apply(context, code)
+                                }
+                            )
+                        }
+                    }
+                }
             )
         },
         floatingActionButton = {
@@ -237,6 +273,47 @@ fun HeraScanApp() {
             } else {
                 Spacer(Modifier.height(80.dp))
             }
+        }
+
+        // İlk açılış dil adımı: tercih yoksa İngilizce varsayılanla sor.
+        if (showLangOnboarding) {
+            AlertDialog(
+                onDismissRequest = { /* seçim yapmadan kapanmaz */ },
+                title = { Text(stringResource(R.string.onboarding_language_title)) },
+                text = {
+                    Column(
+                        modifier = Modifier.verticalScroll(rememberScrollState())
+                    ) {
+                        Text(
+                            text = stringResource(R.string.onboarding_language_desc),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        AppLanguage.LANGUAGES.forEach { (code, _, label) ->
+                            val selected = code == pendingLang
+                            TextButton(
+                                onClick = { pendingLang = code },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = if (selected) "● $label" else label,
+                                    fontWeight = if (selected) FontWeight.SemiBold else null,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showLangOnboarding = false
+                        AppLanguage.apply(context, pendingLang)
+                    }) {
+                        Text(stringResource(R.string.continue_button))
+                    }
+                }
+            )
         }
 
         // OCR Bottom Sheet

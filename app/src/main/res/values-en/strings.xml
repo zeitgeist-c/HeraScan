@@ -71,4 +71,8 @@
     <string name="scanner_start_failed">Could not start scanner.</string>
     <string name="clipboard_legacy_notice">Preview may be visible on older devices.</string>
     <string name="delete_keeps_files">PDF/TXT files saved to the device remain on the device.</string>
+    <string name="language_title">Language</string>
+    <string name="onboarding_language_title">Choose your language</string>
+    <string name="onboarding_language_desc">HeraScan will open in the language you choose. You can change it later in settings.</string>
+    <string name="continue_button">Continue</string>
 </resources>

@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.HeraScan" parent="android:Theme.Material.Light.NoActionBar">
+    <!-- AppCompatActivity zorunlu kılar: AppCompat türevi tema olmadan
+         "You need to use a Theme.AppCompat theme" ile çöker. Compose tüm
+         görünümü çizdiği için ActionBar/title kapatılır. -->
+    <style name="Theme.HeraScan" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:statusBarColor">#FF6200EE</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
     </style>
 </resources>

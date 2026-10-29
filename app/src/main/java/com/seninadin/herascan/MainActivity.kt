@@ -2,13 +2,14 @@
 package com.seninadin.herascan
 
 import android.app.Activity
+import android.content.Context
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -42,9 +43,20 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.tasks.await
 import java.util.Date
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
+    override fun attachBaseContext(newBase: Context?) {
+        // API<=32: delegate locale'i activity context'i kurulmadan once
+        // gormeli; onCreate'teki cagri bu surumlerde gec kalir.
+        if (newBase != null) {
+            AppLanguage.applyStoredOrDefault(newBase)
+        }
+        super.attachBaseContext(newBase)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // Kayıtlı dil yoksa İngilizce: sistem dili varsayılanı ezemez.
+        // AppCompatDelegate API<=32'de locale'i yalnız AppCompatActivity
+        // üzerinden uygular; attachBaseContext'te erken kuruldu.
         AppLanguage.applyStoredOrDefault(this)
         super.onCreate(savedInstanceState)
         setContent {

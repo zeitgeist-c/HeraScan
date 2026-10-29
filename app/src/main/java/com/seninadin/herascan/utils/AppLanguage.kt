@@ -53,8 +53,14 @@ object AppLanguage {
         )
     }
 
-    /** Açılışta bir kez: kayıtlı tercih yoksa İngilizceyi kilitle. */
+    /** Açılışta bir kez: kayıtlı tercihi uygula; kayıt yoksa İngilizce
+     *  uygulanır ama YAZILMAZ — onboarding dil seçimi "kayıt yok" durumunu
+     *  görebilmeli. Kullanıcı seçince apply() kaydeder. */
     fun applyStoredOrDefault(context: Context) {
-        apply(context, savedTag(context) ?: DEFAULT)
+        val tag = savedTag(context) ?: DEFAULT
+        val entry = LANGUAGES.find { it.first == tag } ?: LANGUAGES.first()
+        AppCompatDelegate.setApplicationLocales(
+            LocaleListCompat.forLanguageTags(entry.second)
+        )
     }
 }

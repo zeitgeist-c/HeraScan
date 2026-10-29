@@ -1,6 +1,6 @@
 # HeraScan — on-device document scanner for Android
 
-> Türkçe: [README.tr.md](./README.tr.md)
+> Turkish: [README.tr.md](./README.tr.md)
 
 **Scan paper, get a PDF, read it back. Nothing leaves the phone.**
 

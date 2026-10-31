@@ -75,4 +75,6 @@
     <string name="onboarding_language_title">Escolha seu idioma</string>
     <string name="onboarding_language_desc">O HeraScan abrirá no idioma escolhido. Você poderá alterá-lo depois nos ajustes.</string>
     <string name="continue_button">Continuar</string>
+    <string name="rename">Renomear</string>
+    <string name="save_destination">Documentos/HeraScan</string>
 </resources>

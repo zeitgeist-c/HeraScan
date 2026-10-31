@@ -75,4 +75,6 @@
     <string name="onboarding_language_title">Kies je taal</string>
     <string name="onboarding_language_desc">HeraScan opent in de gekozen taal. Je kunt dit later wijzigen in de instellingen.</string>
     <string name="continue_button">Doorgaan</string>
+    <string name="rename">Hernoemen</string>
+    <string name="save_destination">Documenten/HeraScan</string>
 </resources>

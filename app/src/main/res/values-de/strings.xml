@@ -75,4 +75,6 @@
     <string name="onboarding_language_title">Wählen Sie Ihre Sprache</string>
     <string name="onboarding_language_desc">HeraScan wird in der gewählten Sprache geöffnet. Sie können sie später in den Einstellungen ändern.</string>
     <string name="continue_button">Weiter</string>
+    <string name="rename">Umbenennen</string>
+    <string name="save_destination">Dokumente/HeraScan</string>
 </resources>

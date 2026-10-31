@@ -464,7 +464,7 @@ fun ActiveScanSection(
         ActionCard(
             icon = Icons.Default.CheckCircle,
             label = stringResource(R.string.save_pdf),
-            subtitle = stringResource(R.string.downloads),
+            subtitle = stringResource(R.string.save_destination),
             style = ActionStyle.Secondary,
             modifier = Modifier.weight(1f),
             onClick = {

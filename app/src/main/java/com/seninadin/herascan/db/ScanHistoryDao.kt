@@ -6,6 +6,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 
 @Dao
 interface ScanHistoryDao {
@@ -14,6 +15,9 @@ interface ScanHistoryDao {
 
     @Delete
     suspend fun deleteScan(scanHistory: ScanHistory)
+
+    @Update
+    suspend fun updateScan(scanHistory: ScanHistory)
 
     @Query("SELECT * FROM scan_history ORDER BY dateMillis DESC")
     fun getScansPagingSource(): PagingSource<Int, ScanHistory>

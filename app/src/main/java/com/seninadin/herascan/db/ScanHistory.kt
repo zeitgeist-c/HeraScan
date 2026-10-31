@@ -10,5 +10,6 @@ data class ScanHistory(
     val title: String,          // Default document name (e.g. "Scan_20240325")
     val dateMillis: Long,       // Scan date
     val pdfUri: String? = null, // Generated PDF path
-    val thumbnailUri: String? = null // Cover photo of the first page the user can see
+    val thumbnailUri: String? = null, // Cover photo of the first page the user can see
+    val pageUrisJson: String? = null // JSON array of all page image URIs ("Read All Pages" needs every page)
 )

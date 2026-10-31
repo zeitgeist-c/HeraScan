@@ -21,12 +21,14 @@
     <string name="text_copied">Metin panoya kopyalandı.</string>
     <string name="share_text_chooser">Metni Paylaş:</string>
     <string name="rename_document">Belgeyi İsimlendir</string>
+    <string name="rename">Yeniden Adlandır</string>
     <string name="document_name">Belge Adı</string>
     <string name="save">Kaydet</string>
     <string name="saved_to_history">Belge geçmişe kaydedildi.</string>
     <string name="share_file_chooser">Dosyayı Paylaş:</string>
     <string name="share_error">Paylaşım Hatası: %1$s</string>
     <string name="save_pdf_not_found">Kaydedilecek PDF bulunamadı.</string>
+    <string name="save_destination">Belgeler/HeraScan</string>
     <string name="save_success">%1$s Belgeler klasörüne başarıyla kaydedildi.</string>
     <string name="save_failed">Dosya kaydedilemedi.</string>
     <string name="default_doc_name">Belge</string>

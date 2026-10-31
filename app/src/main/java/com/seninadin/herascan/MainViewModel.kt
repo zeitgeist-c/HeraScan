@@ -109,11 +109,18 @@ class MainViewModel(
     }
 
     fun openScanFromHistory(scan: ScanHistory) {
-        val thumbnailUris = scan.thumbnailUri?.let { raw ->
-            runCatching { Uri.parse(raw) }.getOrNull()?.let { listOf(it) }
+        val pageUris = runCatching {
+            val raw = scan.pageUrisJson ?: return@runCatching emptyList<Uri>()
+            val arr = org.json.JSONArray(raw)
+            (0 until arr.length()).mapNotNull { i ->
+                runCatching { android.net.Uri.parse(arr.optString(i)) }.getOrNull()
+            }
+        }.getOrDefault(emptyList())
+        val thumbnailUris = if (pageUris.isNotEmpty()) pageUris else scan.thumbnailUri?.let { raw ->
+            runCatching { android.net.Uri.parse(raw) }.getOrNull()?.let { listOf(it) }
         } ?: emptyList()
         val pdf = scan.pdfUri?.let { raw ->
-            runCatching { Uri.parse(raw) }.getOrNull()
+            runCatching { android.net.Uri.parse(raw) }.getOrNull()
         }
         _uiState.update {
             it.copy(
@@ -270,11 +277,16 @@ class MainViewModel(
                     copyUriToPrivateStorage(context, uri, "images", "${safeBase}_kapak.jpg")
                         ?.toString() ?: uri.toString()
                 }
+                val stablePageUris = currentState.imageUris.mapIndexedNotNull { index, uri ->
+                    copyUriToPrivateStorage(context, uri, "images", "${safeBase}_s${index + 1}.jpg")
+                        ?.toString() ?: uri.toString()
+                }
                 val history = ScanHistory(
                     title = resolvedName,
                     dateMillis = System.currentTimeMillis(),
                     pdfUri = stablePdfUri,
-                    thumbnailUri = stableThumbUri
+                    thumbnailUri = stableThumbUri,
+                    pageUrisJson = org.json.JSONArray(stablePageUris).toString()
                 )
                 repository.insert(history)
 
@@ -293,13 +305,40 @@ class MainViewModel(
         }
     }
 
+    fun renameScan(scan: ScanHistory, newTitle: String) {
+        val context = getApplication<Application>()
+        val fallbackName = context.getString(R.string.default_doc_name)
+        val resolved = resolveDocumentName(newTitle, fallbackName)
+        if (newTitle.isBlank()) {
+            _uiEvents.tryEmit(ScanUiEvent.ShowToastRes(R.string.doc_name_required))
+            return
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                repository.update(scan.copy(title = resolved))
+            } catch (e: Exception) {
+                Logger.e(TAG, "Record rename failed (id=${scan.id})", e)
+                withContext(Dispatchers.Main) {
+                    _uiEvents.emit(ScanUiEvent.ShowToastRes(R.string.operation_failed))
+                }
+            }
+        }
+    }
+
     fun deleteScan(scan: ScanHistory) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 repository.delete(scan)
                 // Also delete the record's app-private copies; otherwise orphaned files keep
                 // bloating app data (unreachable PDFs/covers).
-                deletePrivateCopies(getApplication<Application>(), scan.pdfUri, scan.thumbnailUri)
+                val pageUris = runCatching {
+                    val arr = org.json.JSONArray(scan.pageUrisJson ?: "[]")
+                    (0 until arr.length()).map { arr.optString(it) }
+                }.getOrDefault(emptyList())
+                deletePrivateCopies(
+                    getApplication<Application>(),
+                    scan.pdfUri, scan.thumbnailUri, *pageUris.toTypedArray()
+                )
             } catch (e: Exception) {
                 Logger.e(TAG, "Record delete failed (id=${scan.id})", e)
                 withContext(Dispatchers.Main) {

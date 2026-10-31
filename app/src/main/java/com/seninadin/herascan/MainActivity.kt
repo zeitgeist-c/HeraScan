@@ -54,9 +54,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Kayıtlı dil yoksa İngilizce: sistem dili varsayılanı ezemez.
-        // AppCompatDelegate API<=32'de locale'i yalnız AppCompatActivity
-        // üzerinden uygular; attachBaseContext'te erken kuruldu.
+        // No saved language means English: the system language must not override the default.
+        // On API<=32 AppCompatDelegate applies the locale only through AppCompatActivity
+        // set up early in attachBaseContext.
         AppLanguage.applyStoredOrDefault(this)
         super.onCreate(savedInstanceState)
         setContent {
@@ -92,13 +92,13 @@ fun HeraScanApp() {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope      = rememberCoroutineScope()
 
-    // Dil: kalıcı tercih + ilk açılış adımı (tercih yoksa İngilizce).
+    // Language: persisted preference + first-launch step (English when unset).
     var langMenuOpen by remember { mutableStateOf(false) }
     var showLangOnboarding by remember { mutableStateOf(AppLanguage.savedTag(context) == null) }
     var pendingLang by remember { mutableStateOf(AppLanguage.DEFAULT) }
     val activeLang = AppLanguage.currentTag(context)
 
-    // Toast olayları
+    // Toast events
     LaunchedEffect(viewModel.uiEvents) {
         viewModel.uiEvents.collect { event ->
             when (event) {
@@ -108,7 +108,7 @@ fun HeraScanApp() {
         }
     }
 
-    // Tarayıcı ayarları
+    // Scanner settings
     val scannerOptions = remember {
         GmsDocumentScannerOptions.Builder()
             .setGalleryImportAllowed(true)
@@ -149,7 +149,7 @@ fun HeraScanApp() {
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Logo işareti
+                        // Logo mark
                         Surface(
                             shape = MaterialTheme.shapes.small,
                             color = MaterialTheme.colorScheme.primary,
@@ -260,14 +260,14 @@ fun HeraScanApp() {
         ) {
             Spacer(Modifier.height(16.dp))
 
-            // Ana içerik
+            // Main content
             if (uiState.imageUris.isNotEmpty()) {
                 ActiveScanSection(uiState, viewModel, context, scope)
             } else {
                 EmptyStateSection()
             }
 
-            // Geçmiş
+            // History
             if (pagingItems.itemCount > 0) {
                 Spacer(Modifier.height(28.dp))
                 Divider(
@@ -287,10 +287,10 @@ fun HeraScanApp() {
             }
         }
 
-        // İlk açılış dil adımı: tercih yoksa İngilizce varsayılanla sor.
+        // First-launch language step: ask with the English default when unset.
         if (showLangOnboarding) {
             AlertDialog(
-                onDismissRequest = { /* seçim yapmadan kapanmaz */ },
+                onDismissRequest = { /* cannot be dismissed without choosing */ },
                 title = { Text(stringResource(R.string.onboarding_language_title)) },
                 text = {
                     Column(
@@ -349,12 +349,12 @@ fun HeraScanApp() {
             }
         }
 
-        // Adlandırma dialogu
+        // Naming dialog
         if (uiState.showRenameDialog) {
             RenameDocumentDialog(uiState, viewModel, context)
         }
 
-        // PDF görüntüleyici
+        // PDF viewer
         if (uiState.showPdfViewer) {
             PdfViewerScreen(
                 pdfUri  = uiState.pdfUri,

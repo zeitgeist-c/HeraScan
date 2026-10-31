@@ -21,11 +21,11 @@ import java.util.concurrent.TimeUnit
 private const val TEMP_FILE_MAX_AGE_HOURS = 24L
 private const val TAG = "FileUtils"
 
-/** Paylaşım için kopyalanan kaynağın üst sınırı (100 MB). */
+/** Upper bound for a copied share source (100 MB). */
 private const val SHARE_SOURCE_MAX_BYTES = 100L * 1024 * 1024
 
 /**
- * Boş belge adını tek noktada çözer (DB başlığı ↔ dosya adı sözleşmesi).
+ * Resolves the empty document name in one place (DB title ↔ file name contract).
  * Saf fonksiyon — birim testli.
  */
 fun resolveDocumentName(raw: String, fallback: String): String {
@@ -34,8 +34,8 @@ fun resolveDocumentName(raw: String, fallback: String): String {
 }
 
 /**
- * Eski temp dosyalarını temizler. Çağıranın scope'unda çalışır
- * (sahipsiz CoroutineScope kullanılmaz).
+ * Cleans old temp files. Runs in the caller's scope
+ * (no orphaned CoroutineScope).
  */
 suspend fun cleanupTempFiles(context: Context) {
     withContext(Dispatchers.IO) {
@@ -59,12 +59,12 @@ suspend fun cleanupTempFiles(context: Context) {
 }
 
 /**
- * Kaynak URI'yi app-private kalıcı alana (filesDir) kopyalar; geçmiş kayıtları
- * hem cihaz yeniden başlatıldıktan sonra hem de [cleanupTempFiles] sonrası açılır.
- * cacheDir kullanılmaz: cache temizliği 24 saatten eski kayıtları siliyordu.
- * Dosya adı kayıt başına benzersizleştirilir: aynı adlı iki belge birbirinin
- * kopyasını ezmesin (yanlış PDF gösterme / silmede veri kaybı).
- * Dönüş: kopyanın content URI'si, ya da kopya başarısızsa null.
+ * Copies the source URI into app-private permanent storage (filesDir); history records
+ * open both after device restarts and after [cleanupTempFiles].
+ * cacheDir is not used: cache eviction deleted records older than 24 hours.
+ * File names are uniquified per record: two same-named documents must not overwrite
+ * each other's copy (wrong PDF shown / data loss on delete).
+ * Returns: the copy's content URI, or null when copying fails.
  */
 suspend fun copyUriToPrivateStorage(
     context: Context,
@@ -86,15 +86,15 @@ suspend fun copyUriToPrivateStorage(
                 dest
             )
         }.onFailure { e ->
-            Logger.e(TAG, "Private kopya başarısız: $folderName/$fileName", e)
+            Logger.e(TAG, "Private copy failed: $folderName/$fileName", e)
         }.getOrNull()
     }
 }
 
 /**
- * Geçmiş kaydına ait app-private kopyaları siler (filesDir/images, filesDir/pdfs).
- * Yalnızca kendi kopyalarımıza dokunur: dış (scanner/MediaStore) URI'leri ve
- * kullanıcının cihaza kaydettiği dosyalar korunur.
+ * Deletes a history record's app-private copies (filesDir/images, filesDir/pdfs).
+ * Touches only our own copies: external (scanner/MediaStore) URIs and
+ * files the user saved on the device are preserved.
  */
 fun deletePrivateCopies(context: Context, vararg uriStrings: String?) {
     val root = context.filesDir.canonicalFile
@@ -127,7 +127,7 @@ private fun querySourceSize(context: Context, uri: Uri): Long? {
 }
 
 /**
- * Dosya paylaşımı için geçici bir URI oluşturur ve Paylaşım Intent'i döner.
+ * Creates a temporary URI for file sharing and returns the share Intent.
  */
 suspend fun shareFile(
     context: Context,
@@ -176,15 +176,15 @@ suspend fun shareFile(
             
             Result.success(Intent.createChooser(shareIntent, context.getString(R.string.share_file_chooser)))
         } catch (e: Exception) {
-            Logger.e(TAG, "Paylaşım hazırlanamadı", e)
+            Logger.e(TAG, "Share preparation failed", e)
             Result.failure(Exception(context.getString(R.string.save_failed)))
         }
     }
 }
 
 /**
- * MediaStore yazma kalıbı: insert → yaz → rollback.
- * `saveTextToFile` ve `savePdfToDevice` ortak kullanır (DUP-02).
+ * MediaStore write pattern: insert → write → rollback.
+ * Shared by `saveTextToFile` and `savePdfToDevice` (DUP-02).
  */
 private suspend fun insertMediaFile(
     context: Context,
@@ -210,7 +210,7 @@ private suspend fun insertMediaFile(
                     outputStream.use { write(it) }
                     Result.success(Unit)
                 } catch (e: Exception) {
-                    // Yarım kalan dosya cihazda görünmesin: MediaStore satırını geri al.
+                    // A half-written file must not appear on the device: roll back the MediaStore row.
                     runCatching { resolver.delete(uri, null, null) }
                     throw e
                 }
@@ -219,16 +219,16 @@ private suspend fun insertMediaFile(
                 Result.failure(Exception(context.getString(R.string.save_failed)))
             }
         } catch (e: Exception) {
-            Logger.e(TAG, "MediaStore yazma başarısız: $displayName", e)
+            Logger.e(TAG, "MediaStore write failed: $displayName", e)
             Result.failure(Exception(context.getString(R.string.save_failed)))
         }
     }
 }
 
 /**
- * OCR metnini TXT dosyası olarak cihaza kaydeder.
- * Ad, MediaStore DISPLAY_NAME'e yazılmadan önce dosya sistemi için güvenli hale
- * getirilir (`:` `/` gibi karakterler kaydı bozuyordu); PDF kaydıyla aynı sözleşme.
+ * Saves the OCR text to the device as a TXT file.
+ * The name is made filesystem-safe before being written to MediaStore DISPLAY_NAME
+ * (`:` `/` characters used to break the entry); same contract as PDF saving.
  */
 suspend fun saveTextToFile(context: Context, text: String, fileName: String): Result<String> {
     val actualFileName = fileName.toSafeFileName(".txt")
@@ -238,7 +238,7 @@ suspend fun saveTextToFile(context: Context, text: String, fileName: String): Re
 }
 
 /**
- * Belirtilen URI'deki PDF'i cihazın Belgeler (Documents) klasörüne kaydeder.
+ * Saves the PDF at the given URI into the device Documents folder.
  */
 suspend fun savePdfToDevice(
     context: Context,
@@ -263,15 +263,15 @@ suspend fun savePdfToDevice(
                 }.map { fileName }
             }
         } catch (e: Exception) {
-            Logger.e(TAG, "PDF kaydetme başarısız", e)
+            Logger.e(TAG, "PDF save failed", e)
             Result.failure(Exception(context.getString(R.string.save_failed)))
         }
     }
 }
 
 /**
- * Dosya adını klasörde çakışmayacak biçimde benzersizleştirir: `ad.pdf` →
- * `ad_ab12cd34.pdf`. Aynı adlı iki tarama birbirinin private kopyasını ezmesin.
+ * Uniquifies the file name against the folder: `name.pdf` →
+ * `name_ab12cd34.pdf`. Two same-named scans must not overwrite each other's private copy.
  */
 internal fun uniqueFileName(fileName: String, suffix: String = UUID.randomUUID().toString().take(8)): String {
     val dot = fileName.lastIndexOf('.')

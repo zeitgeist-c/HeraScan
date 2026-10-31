@@ -5,8 +5,8 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Merkezi tarih biçimlendiriciler (tek sözleşme noktası).
- * Cihaz diline saygı için [Locale.getDefault] kullanılır.
+ * Central date formatters (single contract point).
+ * [Locale.getDefault] is used to respect the device language.
  */
 object DateFormats {
     private const val HISTORY_PATTERN = "d MMM yyyy"

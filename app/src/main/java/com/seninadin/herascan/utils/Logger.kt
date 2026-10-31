@@ -4,10 +4,10 @@ import android.util.Log
 import com.seninadin.herascan.BuildConfig
 
 /**
- * Merkezi log kapısı: yalnız hata ayıklama derlemelerinde Logcat'e yazar.
- * Sürüm derlemesinde hiçbir şey yazmaz — log satırları kullanıcı belge adı,
- * dosya yolu gibi kişisel veri taşıyabildiği için release'te tamamen sessizdir.
- * Kullanıcıya gösterilen mesajlar her zaman string kaynağından gelir.
+ * Central log gate: writes to Logcat in debug builds only.
+ * Writes nothing in release builds — log lines may carry personal data like
+ * document names and file paths, so release builds stay fully silent.
+ * User-visible messages always come from string resources.
  */
 object Logger {
     fun d(tag: String, message: String) {

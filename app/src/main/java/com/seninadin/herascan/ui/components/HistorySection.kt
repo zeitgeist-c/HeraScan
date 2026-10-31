@@ -30,7 +30,7 @@ import com.seninadin.herascan.db.ScanHistory
 import com.seninadin.herascan.utils.DateFormats
 
 // ════════════════════════════════════════════════════════════════
-//  Geçmiş Bölümü
+//  History section
 // ════════════════════════════════════════════════════════════════
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -78,7 +78,7 @@ fun HistorySection(
     }
 }
 
-// ─── Geçmiş Kartı ──────────────────────────────────────────────
+// ─── History card ──────────────────────────────────────────────
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -117,7 +117,7 @@ private fun HistoryCard(
                         modifier = Modifier.fillMaxSize()
                     )
                 } else {
-                    // Thumbnail yoksa PDF ikonu göster
+                    // Show a PDF icon when there is no thumbnail
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -132,7 +132,7 @@ private fun HistoryCard(
                 }
             }
 
-            // Sil butonu (sağ üst köşe)
+            // Delete button (top right corner)
             IconButton(
                 onClick = onDeleteClick,
                 modifier = Modifier
@@ -158,7 +158,7 @@ private fun HistoryCard(
 
         Spacer(Modifier.height(6.dp))
 
-        // Belge adı
+        // Document name
         Text(
             text = scan.title,
             style = MaterialTheme.typography.labelMedium,

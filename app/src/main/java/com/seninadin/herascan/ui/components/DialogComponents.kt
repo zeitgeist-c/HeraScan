@@ -41,7 +41,7 @@ import kotlinx.coroutines.launch
 import java.util.Date
 
 // ════════════════════════════════════════════════════════════════
-//  Boş Durum Ekranı
+//  Empty-state screen
 // ════════════════════════════════════════════════════════════════
 
 @Composable
@@ -52,7 +52,7 @@ fun EmptyStateSection() {
             .padding(vertical = 32.dp, horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // İllüstrasyon
+        // Illustration
         EmptyStateIllustration()
 
         Spacer(Modifier.height(28.dp))
@@ -75,7 +75,7 @@ fun EmptyStateSection() {
 
         Spacer(Modifier.height(24.dp))
 
-        // Bilgi çipi
+        // Info chip
         Surface(
             shape = RoundedCornerShape(12.dp),
             color = MaterialTheme.colorScheme.primaryContainer,
@@ -104,14 +104,14 @@ fun EmptyStateSection() {
     }
 }
 
-/** Compose ile çizilmiş boş durum illüstrasyonu */
+/** Empty-state illustration drawn with Compose */
 @Composable
 private fun EmptyStateIllustration() {
     Box(
         modifier = Modifier.size(120.dp),
         contentAlignment = Alignment.BottomCenter
     ) {
-        // Gölge
+        // Shadow
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -153,7 +153,7 @@ private fun EmptyStateIllustration() {
                     )
                 )
         ) {
-            // Belge satırları
+            // Document lines
             Column(
                 modifier = Modifier.padding(start = 10.dp, top = 20.dp, end = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(5.dp)
@@ -171,7 +171,7 @@ private fun EmptyStateIllustration() {
             }
         }
 
-        // Kamera ikonu (sağ üst)
+        // Camera icon (top right)
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -191,7 +191,7 @@ private fun EmptyStateIllustration() {
 }
 
 // ════════════════════════════════════════════════════════════════
-//  OCR Sonuç İçeriği (Bottom Sheet içinde gösterilir)
+//  OCR result content (shown inside the bottom sheet)
 // ════════════════════════════════════════════════════════════════
 
 @Composable
@@ -207,7 +207,7 @@ fun OcrResultContent(
             .padding(horizontal = 20.dp)
             .padding(top = 8.dp, bottom = 32.dp)
     ) {
-        // Başlık
+        // Title
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -259,7 +259,7 @@ fun OcrResultContent(
 
         Spacer(Modifier.height(20.dp))
 
-        // Aksiyon butonları
+        // Action buttons
         Row(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier.fillMaxWidth()
@@ -273,7 +273,7 @@ fun OcrResultContent(
                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                     val clip = ClipData.newPlainText("HeraScan OCR", extractedText)
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        // TCKN/IBAN gibi hassas OCR metni pano önizlemelerinde görünmesin.
+                        // Sensitive OCR text like ID/IBAN numbers must not appear in clipboard previews.
                         clip.description.extras = PersistableBundle().apply {
                             putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true)
                         }
@@ -302,7 +302,7 @@ fun OcrResultContent(
                 )
             }
 
-            // Paylaş
+            // Share
             val shareChooser = stringResource(R.string.share_text_chooser)
             Button(
                 onClick = {
@@ -378,7 +378,7 @@ fun OcrResultContent(
 }
 
 // ════════════════════════════════════════════════════════════════
-//  Belge Adlandırma Dialogu
+//  Document naming dialog
 // ════════════════════════════════════════════════════════════════
 
 @Composable

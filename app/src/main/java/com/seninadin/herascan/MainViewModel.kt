@@ -54,7 +54,7 @@ sealed class ScanUiEvent {
 
 private const val TAG = "MainViewModel"
 
-/** Çok sayfalı OCR metinlerini birleştiren ayraç (TXT çıktısına da yazılır). */
+/** Separator joining multi-page OCR texts (also written to TXT output). */
 private const val PAGE_SEPARATOR = "\n\n---\n\n"
 
 class MainViewModel(
@@ -72,10 +72,10 @@ class MainViewModel(
     private val _uiEvents = MutableSharedFlow<ScanUiEvent>(extraBufferCapacity = 1)
     val uiEvents = _uiEvents.asSharedFlow()
 
-    /** Çalışan OCR işi — yeni tarama/OCR eskisini iptal eder (stale-response engeli). */
+    /** Running OCR job — a new scan/OCR cancels the old one (stale-response guard). */
     private var ocrJob: Job? = null
 
-    /** Kaydet çift-dokunuş guard'ı (duplicate history engeli). */
+    /** Save double-tap guard (duplicate history guard). */
     private var isSaving = false
 
     val pagedScans: Flow<PagingData<ScanHistory>> = repository.getScansPaged()
@@ -129,7 +129,7 @@ class MainViewModel(
         _uiState.update { it.copy(showPdfViewer = false) }
     }
 
-    /** Tek görseli ML Kit ile yazıya çevirir (iki OCR akışının ortak çekirdeği — DUP-01). */
+    /** Turns one image into text with ML Kit (shared core of both OCR flows — DUP-01). */
     private suspend fun recognizeImage(imageUri: Uri): String {
         val context = getApplication<Application>()
         val image = withContext(Dispatchers.IO) {
@@ -162,7 +162,7 @@ class MainViewModel(
         ocrJob = viewModelScope.launch {
             _uiState.update { it.copy(isOcrLoading = true, extractedText = "", ocrProgress = 0, ocrTotal = 1) }
             val started = System.currentTimeMillis()
-            Logger.d(TAG, "OCR başladı (tek sayfa)")
+            Logger.d(TAG, "OCR started (single page)")
 
             try {
                 val result = recognizeImage(imageUri)
@@ -180,7 +180,7 @@ class MainViewModel(
                 Logger.d(TAG, "OCR bitti (tek sayfa, ${System.currentTimeMillis() - started} ms)")
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
-                Logger.e(TAG, "OCR başarısız (tek sayfa)", e)
+                Logger.e(TAG, "OCR failed (single page)", e)
                 showOcrError()
             }
         }
@@ -195,7 +195,7 @@ class MainViewModel(
             _uiState.update { it.copy(isOcrLoading = true, extractedText = "", ocrProgress = 0, ocrTotal = imageUris.size) }
             val context = getApplication<Application>()
             val started = System.currentTimeMillis()
-            Logger.d(TAG, "OCR başladı (${imageUris.size} sayfa)")
+            Logger.d(TAG, "OCR started (${imageUris.size} pages)")
 
             try {
                 val results = mutableListOf<String>()
@@ -209,7 +209,7 @@ class MainViewModel(
                         _uiState.update { it.copy(ocrProgress = index + 1) }
                     } catch (e: Exception) {
                         if (e is kotlinx.coroutines.CancellationException) throw e
-                        Logger.e(TAG, "OCR sayfa başarısız (index=$index)", e)
+                        Logger.e(TAG, "OCR page failed (index=$index)", e)
                         results.add("")
                         failedPages++
                     }
@@ -236,7 +236,7 @@ class MainViewModel(
                 Logger.d(TAG, "OCR bitti (${imageUris.size} sayfa, $failedPages hata, ${System.currentTimeMillis() - started} ms)")
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
-                Logger.e(TAG, "OCR başarısız (çok sayfa)", e)
+                Logger.e(TAG, "OCR failed (multi page)", e)
                 showOcrError()
             }
         }
@@ -257,8 +257,8 @@ class MainViewModel(
         isSaving = true
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                // Scanner URI'leri kalıcı değil — geçmiş restart sonrası da açılsın
-                // diye PDF ve kapağı app-private alana kopyala, DB'ye kopyayı yaz.
+                // Scanner URIs are not persistent — history must open after restarts too
+                // so copy the PDF and cover into app-private storage and write the copy to the DB.
                 val safeBase = resolvedName.toSafeFileName("")
                     .removeSuffix(".")
                     .ifBlank { "HeraScan" }
@@ -283,7 +283,7 @@ class MainViewModel(
                     _uiEvents.emit(ScanUiEvent.ShowToastRes(R.string.saved_to_history))
                 }
             } catch (e: Exception) {
-                Logger.e(TAG, "Geçmişe kayıt başarısız", e)
+                Logger.e(TAG, "History save failed", e)
                 withContext(Dispatchers.Main) {
                     _uiEvents.emit(ScanUiEvent.ShowToastRes(R.string.save_history_failed))
                 }
@@ -297,11 +297,11 @@ class MainViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 repository.delete(scan)
-                // Kayda ait app-private kopyaları da sil; yoksa dosyalar sahipsiz kalıp
-                // uygulama verisi şişiyor (hiçbir yerden erişilemeyen PDF/kapak).
+                // Also delete the record's app-private copies; otherwise orphaned files keep
+                // bloating app data (unreachable PDFs/covers).
                 deletePrivateCopies(getApplication<Application>(), scan.pdfUri, scan.thumbnailUri)
             } catch (e: Exception) {
-                Logger.e(TAG, "Kayıt silinemedi (id=${scan.id})", e)
+                Logger.e(TAG, "Record delete failed (id=${scan.id})", e)
                 withContext(Dispatchers.Main) {
                     _uiEvents.emit(ScanUiEvent.ShowToastRes(R.string.operation_failed))
                 }
@@ -324,6 +324,6 @@ class MainViewModelFactory(
             @Suppress("UNCHECKED_CAST")
             return MainViewModel(application, repository) as T
         }
-        throw IllegalArgumentException("Bilinmeyen ViewModel sınıfı")
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

@@ -84,10 +84,10 @@ private val DarkColorScheme = darkColorScheme(
 
 // ════════════════════════════════════════════════════════════════
 //  Shape Sistemi
-//  small  →  8 dp  (chip, badge, küçük buton)
-//  medium → 12 dp  (buton, input, küçük kart)
+//  small  →  8 dp  (chip, badge, small button)
+//  medium → 12 dp  (button, input, small card)
 //  large  → 16 dp  (kart, panel)
-//  extraLarge → 20 dp (büyük kart, bottom sheet köşesi)
+//  extraLarge → 20 dp  (large card, bottom sheet corner)
 // ════════════════════════════════════════════════════════════════
 val HeraScanShapes = Shapes(
     extraSmall = RoundedCornerShape(6.dp),
@@ -103,8 +103,8 @@ val HeraScanShapes = Shapes(
 @Composable
 fun HeraScanTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Marka renklerini korumak için dynamicColor kapalı.
-    // Android 12+ dinamik renkler marka kimliğinin önüne geçer.
+    // dynamicColor off to protect brand colors.
+    // Android 12+ dynamic colors would override the brand identity.
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {

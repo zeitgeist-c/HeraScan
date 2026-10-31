@@ -1,6 +1,7 @@
 # What changed
 
 ## How it was tested
-- [ ] `.\check.ps1` passes
+- [ ] `./gradlew testDebugUnitTest` passes
+- [ ] `./gradlew assembleDebug` passes
 
 ## Screenshots (if UI)

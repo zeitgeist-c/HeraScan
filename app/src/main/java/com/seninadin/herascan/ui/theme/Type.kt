@@ -10,16 +10,16 @@ import androidx.compose.ui.unit.sp
 // ════════════════════════════════════════════════════════════════
 //  HeraScan Typography — DM Sans
 //
-//  DM Sans kullanmak için:
-//  1. build.gradle (app) dosyasına şunu ekleyin:
+//  To use DM Sans:
+//  1. add this to build.gradle (app):
 //       implementation("androidx.compose.ui:ui-text-google-fonts:1.6.8")
-//  2. Aşağıdaki yorum satırlarını kaldırın ve FontFamily.Default
-//     satırını kaldırın.
+//  2. uncomment the block below and remove the FontFamily.Default
+//     line.
 //
-//  Şu an için sistem fontu (Roboto) kullanılmaktadır.
+//  The system font (Roboto) is used for now.
 // ════════════════════════════════════════════════════════════════
 
-// ─── DM Sans ile kullanmak için bu bloğun yorumunu kaldırın ────
+// ─── Uncomment this block to use DM Sans ────
 // import androidx.compose.ui.text.googlefonts.Font
 // import androidx.compose.ui.text.googlefonts.GoogleFont
 //
@@ -36,11 +36,11 @@ import androidx.compose.ui.unit.sp
 // )
 // ────────────────────────────────────────────────────────────────
 
-private val AppFont = FontFamily.Default // DmSans ile değiştirin
+private val AppFont = FontFamily.Default // Replace with DmSans
 
 val HeraScanTypography = Typography(
 
-    // Uygulama başlığı
+    // App title
     titleLarge = TextStyle(
         fontFamily = AppFont,
         fontWeight = FontWeight.SemiBold,
@@ -49,7 +49,7 @@ val HeraScanTypography = Typography(
         letterSpacing = (-0.3).sp
     ),
 
-    // Bölüm başlıkları (ör. "Aktif Tarama")
+    // Section titles (e.g. "Active Scan")
     titleMedium = TextStyle(
         fontFamily = AppFont,
         fontWeight = FontWeight.SemiBold,
@@ -58,7 +58,7 @@ val HeraScanTypography = Typography(
         letterSpacing = (-0.1).sp
     ),
 
-    // Kart isimleri, küçük başlıklar
+    // Card names, small titles
     titleSmall = TextStyle(
         fontFamily = AppFont,
         fontWeight = FontWeight.SemiBold,
@@ -76,7 +76,7 @@ val HeraScanTypography = Typography(
         letterSpacing = 0.sp
     ),
 
-    // Açıklamalar
+    // Descriptions
     bodyMedium = TextStyle(
         fontFamily = AppFont,
         fontWeight = FontWeight.Normal,
@@ -85,7 +85,7 @@ val HeraScanTypography = Typography(
         letterSpacing = 0.sp
     ),
 
-    // İkincil açıklama
+    // Secondary description
     bodySmall = TextStyle(
         fontFamily = AppFont,
         fontWeight = FontWeight.Normal,
@@ -103,7 +103,7 @@ val HeraScanTypography = Typography(
         letterSpacing = 0.sp
     ),
 
-    // Chip, badge, küçük etiketler
+    // Chip, badge, small labels
     labelMedium = TextStyle(
         fontFamily = AppFont,
         fontWeight = FontWeight.Medium,
@@ -112,7 +112,7 @@ val HeraScanTypography = Typography(
         letterSpacing = 0.sp
     ),
 
-    // Bölüm üstü kapitaller (SECTION LABELS)
+    // Uppercase section headers (SECTION LABELS)
     labelSmall = TextStyle(
         fontFamily = AppFont,
         fontWeight = FontWeight.SemiBold,
@@ -122,5 +122,5 @@ val HeraScanTypography = Typography(
     )
 )
 
-// Geriye dönük uyumluluk için takma ad
+// Alias for backward compatibility
 val Typography = HeraScanTypography

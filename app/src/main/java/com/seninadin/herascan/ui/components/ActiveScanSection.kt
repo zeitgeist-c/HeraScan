@@ -35,10 +35,10 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 
 // ════════════════════════════════════════════════════════════════
-//  Yardımcı Bileşenler
+//  Helper components
 // ════════════════════════════════════════════════════════════════
 
-/** Bölüm üstü küçük başlık — örn. "AKTİF TARAMA" */
+/** Small section header — e.g. "ACTIVE SCAN" */
 @Composable
 internal fun SectionLabel(
     text: String,
@@ -54,7 +54,7 @@ internal fun SectionLabel(
     )
 }
 
-/** Sayfa küçük resmi — tarama kartı içinde */
+/** Page thumbnail — inside the scan card */
 @Composable
 private fun PageThumbnail(
     uri: Uri,
@@ -63,7 +63,7 @@ private fun PageThumbnail(
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box {
-            // Kart çerçevesi
+            // Card frame
             Card(
                 shape = MaterialTheme.shapes.small,
                 border = BorderStroke(
@@ -81,7 +81,7 @@ private fun PageThumbnail(
                     modifier = Modifier.fillMaxSize()
                 )
             }
-            // Sayfa numarası rozeti
+            // Page number badge
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
@@ -111,7 +111,7 @@ private fun PageThumbnail(
     }
 }
 
-/** PDF dosyasını gösteren yeşil banner */
+/** Green banner showing the PDF file */
 @Composable
 private fun PdfBanner(
     documentName: String,
@@ -145,7 +145,7 @@ private fun PdfBanner(
                     modifier = Modifier.size(16.dp)
                 )
             }
-            // İsim ve bilgi
+            // Name and details
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "$documentName.pdf",
@@ -161,7 +161,7 @@ private fun PdfBanner(
                     color = MaterialTheme.colorScheme.secondary
                 )
             }
-            // Görüntüle butonu
+            // View button
             FilledTonalButton(
                 onClick = onView,
                 shape = MaterialTheme.shapes.small,
@@ -182,10 +182,10 @@ private fun PdfBanner(
     }
 }
 
-/** Aksiyon kartı için stil türü */
+/** Style type for the action card */
 private enum class ActionStyle { Primary, Secondary, Outlined }
 
-/** 2×2 ızgarasındaki aksiyon kartı */
+/** Action card in the 2x2 grid */
 @Composable
 private fun ActionCard(
     icon: ImageVector,
@@ -269,7 +269,7 @@ private fun ActionCard(
     }
 }
 
-/** Amber renkli OCR tam genişlik butonu */
+/** Amber full-width OCR button */
 @Composable
 private fun OcrActionRow(
     uiState: ScanUiState,
@@ -348,7 +348,7 @@ private fun OcrActionRow(
 }
 
 // ════════════════════════════════════════════════════════════════
-//  Ana Bileşen
+//  Main component
 // ════════════════════════════════════════════════════════════════
 
 @Composable
@@ -358,10 +358,10 @@ fun ActiveScanSection(
     context: Context,
     scope: CoroutineScope
 ) {
-    // ── Bölüm Başlığı ─────────────────────────────────────────────
+    // ── Section header ─────────────────────────────────────────────
     SectionLabel(stringResource(R.string.current_scan))
 
-    // ── Tarama Kartı ──────────────────────────────────────────────
+    // ── Scan card ──────────────────────────────────────────────
     OutlinedCard(
         shape = MaterialTheme.shapes.large,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
@@ -371,7 +371,7 @@ fun ActiveScanSection(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column {
-            // Kart başlığı
+            // Card title
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -402,7 +402,7 @@ fun ActiveScanSection(
                 }
             }
 
-            // Sayfa küçük resimleri
+            // Page thumbnails
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
@@ -431,7 +431,7 @@ fun ActiveScanSection(
 
     Spacer(Modifier.height(16.dp))
 
-    // ── Aksiyon Bölümü ────────────────────────────────────────────
+    // ── Actions section ────────────────────────────────────────────
     SectionLabel(stringResource(R.string.actions))
 
     val pdfNotFoundMsg = stringResource(R.string.pdf_not_found)
@@ -440,7 +440,7 @@ fun ActiveScanSection(
         onDenied = { Toast.makeText(context, pdfSaveDeniedMsg, Toast.LENGTH_SHORT).show() }
     )
 
-    // Satır 1: PDF Paylaş · Cihaza Kaydet
+    // Row 1: Share PDF · Save to device
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -498,7 +498,7 @@ fun ActiveScanSection(
 
     Spacer(Modifier.height(8.dp))
 
-    // Satır 2: Görsel Paylaş · PDF Önizle
+    // Row 2: Share image · Preview PDF
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)

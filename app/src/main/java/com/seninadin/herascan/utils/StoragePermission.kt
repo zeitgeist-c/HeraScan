@@ -14,11 +14,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 
 /**
- * API 29 öncesi cihazlarda MediaStore'a yazmak için gereken
- * WRITE_EXTERNAL_STORAGE runtime iznini isteyen bir kapı döner.
+ * Returns a gate requesting the WRITE_EXTERNAL_STORAGE runtime permission
+ * needed for MediaStore writes on pre-API-29 devices.
  *
- * - API >= 29 veya izin zaten verilmişse: işlem doğrudan çalışır.
- * - İzin yoksa istenir; verilirse bekleyen işlem çalışır, reddedilirse [onDenied] çağrılır.
+ * - API >= 29 or already granted: the action runs directly.
+ * - Otherwise it is requested; the pending action runs when granted, [onDenied] when denied.
  */
 @Composable
 fun rememberStoragePermissionGate(onDenied: () -> Unit): ((() -> Unit) -> Unit) {

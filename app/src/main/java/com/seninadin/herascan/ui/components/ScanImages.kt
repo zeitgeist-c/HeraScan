@@ -10,7 +10,7 @@ import coil.request.ImageRequest
 import com.seninadin.herascan.R
 
 /**
- * Coil görsel isteği tek noktadan (DUP-04): crossfade + sabit boyut.
+ * Coil image requests from one place (DUP-04): crossfade + fixed size.
  * [data] Uri ya da String olabilir.
  */
 @Composable
@@ -26,8 +26,8 @@ fun rememberScanImageRequest(data: Any?, width: Int, height: Int): ImageRequest 
 }
 
 /**
- * Paylaşım sonucu tek noktadan (DUP-03): başarıda chooser'ı açar,
- * hatada sabit kullanıcı mesajı gösterir (iç detay sızdırmaz).
+ * Share result from one place (DUP-03): opens the chooser on success,
+ * shows a fixed user message on failure (no internals leak).
  */
 fun Context.launchShareResult(result: Result<Intent>) {
     if (result.isSuccess) {

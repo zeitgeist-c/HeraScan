@@ -5,20 +5,20 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 
 /**
- * Uygulama içi dil tercihi — tek sözleşme noktası.
+ * In-app language preference — single contract point.
  *
- * Kurallar (13 dil görevi):
- * - Kayıtlı açık tercih kalıcıdır; güncelleme/yeniden başlatma sıfırlamaz.
- * - Tercih yoksa yeni profil İngilizce başlar; sistem dili asla öne geçmez.
- * - "Uygulamayı yeniden başlatma" gerekmez: AppCompatDelegate değişimi
- *   activity'yi kendisi yeniden oluşturur, tarama/OCR işi etkilenmez.
+ * Rules (13-language task):
+ * - A saved explicit preference persists; updates/restarts never reset it.
+ * - Without a preference a fresh profile starts in English; the system language never wins.
+ * - "Restarting the app" is not needed: the AppCompatDelegate swap
+ *   recreates the activity itself; scanning/OCR work is unaffected.
  */
 object AppLanguage {
     const val PREFS = "herascan_prefs"
     const val KEY = "app_language"
     const val DEFAULT = "en"
 
-    /** Kod, BCP-47 etiketi, kendi adıyla görünen ad. Bayrak kullanılmaz. */
+    /** Code, BCP-47 tag, display name in its own language. No flags. */
     val LANGUAGES: List<Triple<String, String, String>> = listOf(
         Triple("en", "en", "English"),
         Triple("tr", "tr", "Türkçe"),
@@ -41,7 +41,7 @@ object AppLanguage {
 
     fun currentTag(context: Context): String = savedTag(context) ?: DEFAULT
 
-    /** Kaydet ve uygula. Bilinmeyen/bozuk kod gelirse İngilizceye düşer. */
+    /** Save and apply. Unknown/broken codes fall back to English. */
     fun apply(context: Context, code: String) {
         val entry = LANGUAGES.find { it.first == code } ?: LANGUAGES.first()
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -53,9 +53,9 @@ object AppLanguage {
         )
     }
 
-    /** Açılışta bir kez: kayıtlı tercihi uygula; kayıt yoksa İngilizce
-     *  uygulanır ama YAZILMAZ — onboarding dil seçimi "kayıt yok" durumunu
-     *  görebilmeli. Kullanıcı seçince apply() kaydeder. */
+    /** Once at startup: apply the saved preference; without a record English
+     *  applies but is NOT written — the onboarding language picker must see the
+     *  "no record" state. apply() saves once the user chooses. */
     fun applyStoredOrDefault(context: Context) {
         val tag = savedTag(context) ?: DEFAULT
         val entry = LANGUAGES.find { it.first == tag } ?: LANGUAGES.first()

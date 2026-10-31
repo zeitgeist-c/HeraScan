@@ -7,8 +7,8 @@ import androidx.room.PrimaryKey
 data class ScanHistory(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    val title: String,          // Belgenin varsayılan adı (ör. "Tarama_20240325")
-    val dateMillis: Long,       // Tarandığı tarih
-    val pdfUri: String? = null, // Oluşturulan PDF'in yolu
-    val thumbnailUri: String? = null // Kullanıcının görebileceği ilk sayfanın kapak fotoğrafı
+    val title: String,          // Default document name (e.g. "Scan_20240325")
+    val dateMillis: Long,       // Scan date
+    val pdfUri: String? = null, // Generated PDF path
+    val thumbnailUri: String? = null // Cover photo of the first page the user can see
 )

@@ -36,9 +36,9 @@ private const val MAX_PDF_DIMENSION = 2048
 private const val TARGET_WIDTH_DP = 400
 
 /**
- * Açılmış PDF oturumu (fd + renderer). Main thread'de açılmaz:
- * `openFileDescriptor` disk I/O, `PdfRenderer` kurulumu dosya ayrıştırma yapar;
- * büyük PDF'lerde kare düşmesi/ANR üretiyordu. Sahibi PdfViewerScreen'dir.
+ * Open PDF session (fd + renderer). Never on the main thread:
+ * `openFileDescriptor` does disk I/O, `PdfRenderer` setup parses the file;
+ * caused dropped frames/ANR on large PDFs. Owned by PdfViewerScreen.
  */
 private class PdfSession(val fd: ParcelFileDescriptor, val renderer: PdfRenderer)
 
@@ -261,7 +261,7 @@ private fun PdfPageCard(
 
     DisposableEffect(pageIndex) {
         onDispose {
-            // Compose çizim hattı bitmap'i bir sonraki karede kullanabilir; recycle() çökme riski taşır.
+            // The Compose draw pipeline may reuse the bitmap next frame; recycle() risks a crash.
             bitmap = null
         }
     }

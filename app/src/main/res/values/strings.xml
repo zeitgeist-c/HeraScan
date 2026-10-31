@@ -21,12 +21,14 @@
     <string name="text_copied">Text copied to clipboard.</string>
     <string name="share_text_chooser">Share Text:</string>
     <string name="rename_document">Name Your Document</string>
+    <string name="rename">Rename</string>
     <string name="document_name">Document Name</string>
     <string name="save">Save</string>
     <string name="saved_to_history">Document saved to history.</string>
     <string name="share_file_chooser">Share File:</string>
     <string name="share_error">Share Error: %1$s</string>
     <string name="save_pdf_not_found">No PDF to save.</string>
+    <string name="save_destination">Documents/HeraScan</string>
     <string name="save_success">%1$s saved to Documents folder.</string>
     <string name="save_failed">Could not save file.</string>
     <string name="default_doc_name">Document</string>

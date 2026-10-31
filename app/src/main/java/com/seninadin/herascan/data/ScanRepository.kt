@@ -27,4 +27,8 @@ class ScanRepository(private val scanHistoryDao: ScanHistoryDao) {
     suspend fun delete(scan: ScanHistory) {
         scanHistoryDao.deleteScan(scan)
     }
+
+    suspend fun update(scan: ScanHistory) {
+        scanHistoryDao.updateScan(scan)
+    }
 }

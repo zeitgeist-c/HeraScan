@@ -77,7 +77,7 @@ fun PdfViewerScreen(
         isLoading = false
     }
 
-    DisposableEffect(Unit) {
+    DisposableEffect(session) {
         onDispose {
             session?.let { open ->
                 runCatching { open.renderer.close() }

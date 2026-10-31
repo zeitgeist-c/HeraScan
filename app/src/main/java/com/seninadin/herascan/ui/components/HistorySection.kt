@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -38,9 +39,11 @@ import com.seninadin.herascan.utils.DateFormats
 fun HistorySection(
     pagingItems: LazyPagingItems<ScanHistory>,
     onScanClick: (ScanHistory) -> Unit,
-    onDelete: (ScanHistory) -> Unit
+    onDelete: (ScanHistory) -> Unit,
+    onRename: (ScanHistory, String) -> Unit
 ) {
     var scanToDelete by remember { mutableStateOf<ScanHistory?>(null) }
+    var scanToRename by remember { mutableStateOf<ScanHistory?>(null) }
 
     SectionLabel(stringResource(R.string.history_scans))
 
@@ -60,7 +63,8 @@ fun HistorySection(
                         .getOrDefault(stringResource(R.string.date_unknown)),
                     onClick = { onScanClick(scan) },
                     onLongClick = { scanToDelete = scan },
-                    onDeleteClick = { scanToDelete = scan }
+                    onDeleteClick = { scanToDelete = scan },
+                    onRenameClick = { scanToRename = scan }
                 )
             }
         }
@@ -76,6 +80,51 @@ fun HistorySection(
             onDismiss = { scanToDelete = null }
         )
     }
+
+    if (scanToRename != null) {
+        RenameHistoryDialog(
+            currentTitle = scanToRename?.title ?: "",
+            onConfirm = { title ->
+                onRename(scanToRename!!, title)
+                scanToRename = null
+            },
+            onDismiss = { scanToRename = null }
+        )
+    }
+}
+
+// ─── Rename history record ──────────────────────────────────────
+
+@Composable
+private fun RenameHistoryDialog(
+    currentTitle: String,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var title by remember(currentTitle) { mutableStateOf(currentTitle) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(R.string.rename_document)) },
+        text = {
+            OutlinedTextField(
+                value = title,
+                onValueChange = { title = it },
+                label = { Text(text = stringResource(R.string.document_name)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(title) }) {
+                Text(text = stringResource(R.string.save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.cancel))
+            }
+        }
+    )
 }
 
 // ─── History card ──────────────────────────────────────────────
@@ -87,7 +136,8 @@ private fun HistoryCard(
     dateText: String,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
-    onDeleteClick: () -> Unit
+    onDeleteClick: () -> Unit,
+    onRenameClick: () -> Unit
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -129,6 +179,29 @@ private fun HistoryCard(
                             modifier = Modifier.size(32.dp)
                         )
                     }
+                }
+            }
+
+            // Rename button (top left corner)
+            IconButton(
+                onClick = onRenameClick,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .size(48.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.65f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Edit,
+                        contentDescription = stringResource(R.string.rename),
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
             }
 

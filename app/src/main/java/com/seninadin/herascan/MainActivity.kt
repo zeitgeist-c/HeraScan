@@ -141,6 +141,25 @@ fun HeraScanApp() {
         }
     }
 
+    val failMsg = stringResource(R.string.scanner_start_failed)
+    var isLaunching by remember { mutableStateOf(false) }
+    fun startScan() {
+        if (activity == null || isLaunching) return
+        isLaunching = true
+        scope.launch {
+            try {
+                val intentSender = withContext(Dispatchers.IO) {
+                    scanner.getStartScanIntent(activity).await()
+                }
+                scanLauncher.launch(IntentSenderRequest.Builder(intentSender).build())
+            } catch (e: Exception) {
+                Toast.makeText(context, failMsg, Toast.LENGTH_LONG).show()
+            } finally {
+                isLaunching = false
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -212,25 +231,8 @@ fun HeraScanApp() {
             )
         },
         floatingActionButton = {
-            val failMsg = stringResource(R.string.scanner_start_failed)
-            var isLaunching by remember { mutableStateOf(false) }
             ExtendedFloatingActionButton(
-                onClick = {
-                    if (activity == null || isLaunching) return@ExtendedFloatingActionButton
-                    isLaunching = true
-                    scope.launch {
-                        try {
-                            val intentSender = withContext(Dispatchers.IO) {
-                                scanner.getStartScanIntent(activity).await()
-                            }
-                            scanLauncher.launch(IntentSenderRequest.Builder(intentSender).build())
-                        } catch (e: Exception) {
-                            Toast.makeText(context, failMsg, Toast.LENGTH_LONG).show()
-                        } finally {
-                            isLaunching = false
-                        }
-                    }
-                },
+                onClick = { startScan() },
                 icon = {
                     Icon(
                         imageVector = Icons.Default.AddPhotoAlternate,
@@ -264,7 +266,7 @@ fun HeraScanApp() {
             if (uiState.imageUris.isNotEmpty()) {
                 ActiveScanSection(uiState, viewModel, context, scope)
             } else {
-                EmptyStateSection()
+                EmptyStateSection(onNewScan = { startScan() })
             }
 
             // History
@@ -279,7 +281,8 @@ fun HeraScanApp() {
                 HistorySection(
                     pagingItems = pagingItems,
                     onScanClick = { viewModel.openScanFromHistory(it) },
-                    onDelete = { viewModel.deleteScan(it) }
+                    onDelete = { viewModel.deleteScan(it) },
+                    onRename = { scan, title -> viewModel.renameScan(scan, title) }
                 )
                 Spacer(Modifier.height(80.dp))
             } else {
@@ -351,7 +354,7 @@ fun HeraScanApp() {
 
         // Naming dialog
         if (uiState.showRenameDialog) {
-            RenameDocumentDialog(uiState, viewModel, context)
+            RenameDocumentDialog(uiState, viewModel)
         }
 
         // PDF viewer

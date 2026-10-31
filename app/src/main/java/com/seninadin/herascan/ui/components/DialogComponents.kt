@@ -11,6 +11,7 @@ import android.os.PersistableBundle
 import android.widget.Toast
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -45,15 +46,20 @@ import java.util.Date
 // ════════════════════════════════════════════════════════════════
 
 @Composable
-fun EmptyStateSection() {
+fun EmptyStateSection(onNewScan: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 32.dp, horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Illustration
-        EmptyStateIllustration()
+        // Illustration — tapping it starts a new scan, like the FAB.
+        Box(
+            modifier = Modifier.clickable(onClick = onNewScan),
+            contentAlignment = Alignment.Center
+        ) {
+            EmptyStateIllustration()
+        }
 
         Spacer(Modifier.height(28.dp))
 
@@ -100,6 +106,13 @@ fun EmptyStateSection() {
                     lineHeight = 18.sp
                 )
             }
+        }
+
+        Spacer(Modifier.height(20.dp))
+
+        // Explicit entry point — same action as the FAB.
+        Button(onClick = onNewScan) {
+            Text(text = stringResource(R.string.new_scan))
         }
     }
 }
@@ -384,8 +397,7 @@ fun OcrResultContent(
 @Composable
 fun RenameDocumentDialog(
     uiState: ScanUiState,
-    viewModel: MainViewModel,
-    context: Context
+    viewModel: MainViewModel
 ) {
     AlertDialog(
         onDismissRequest = { viewModel.dismissRenameDialog() },

@@ -272,7 +272,7 @@ fun HeraScanApp() {
             // History
             if (pagingItems.itemCount > 0) {
                 Spacer(Modifier.height(28.dp))
-                Divider(
+                HorizontalDivider(
                     color = MaterialTheme.colorScheme.outlineVariant,
                     thickness = 1.dp,
                     modifier = Modifier.fillMaxWidth()

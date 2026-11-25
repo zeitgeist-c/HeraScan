@@ -16,6 +16,7 @@ app/build/
 # Misc
 *.log
 .DS_Store
+local.properties
 
 # Release signing (asla commitlenmez)
 *.jks

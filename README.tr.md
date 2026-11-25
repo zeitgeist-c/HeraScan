@@ -8,7 +8,7 @@ HeraScan, tek aktiviteli bir Jetpack Compose uygulaması: kamera geçişini veya
 
 Her adım — tarama, OCR, geçmiş — cihazda çalışır. Hesap yok, yükleme yok, sunucu yok.
 
-![HeraScan · boş ana ekran](./docs/screenshots/01-ana-ekran.png)
+![HeraScan · boş ana ekran](./docs/screenshots/01-home.png)
 
 ---
 
@@ -39,7 +39,7 @@ Her adım — tarama, OCR, geçmiş — cihazda çalışır. Hesap yok, yükleme
 | **Çıktılar** | sayfa başına JPEG ve birleşik PDF |
 | **Çevrimdışı OCR** | cihaz üzerinde ML Kit Text Recognition (Latin), sonuç alt sayfada |
 | **PDF görüntüleyici** | taranan PDF içinde uygulama içi sayfalama |
-| **Kaydet ve paylaş** | PDF Downloads'a, OCR metni `Documents/HeraScan` altına, FileProvider ile paylaşım |
+| **Kaydet ve paylaş** | PDF ve OCR metni `Documents/HeraScan` altına, FileProvider ile paylaşım |
 | **Geçmiş** | Room veritabanı + Paging 3, sayfa boyu 20; aç, yeniden adlandır, sil |
 | **Akıllı adlandırma** | varsayılan ad tarih önekli, Türkçe biçimde |
 | **Önbellek temizliği** | 24 saatten eski tarama önbelleği kendiliğinden silinir |
@@ -52,11 +52,11 @@ Her adım — tarama, OCR, geçmiş — cihazda çalışır. Hesap yok, yükleme
 
 ### 1. Ana ekran
 
-![Ana ekran](./docs/screenshots/01-ana-ekran.png)
+![Ana ekran](./docs/screenshots/01-home.png)
 
 Boş durum ve uygulamanın belge yüklü olmayan tek ekranı.
 
-- **Başlık** — logo, `HeraScan` ve çalışan sürüm (`v0.5.8`).
+- **Başlık** — logo, `HeraScan` ve çalışan sürüm (`v0.5.11`).
 - **Boş illüstrasyon** — *"No Documents Scanned Yet"*, altında ipucu: *"Take a photo or pick from gallery · Up to 50 pages"*.
 - **New Scan** — sağ alttaki mavi eylem düğmesi.
 
@@ -64,7 +64,7 @@ Boş durum ve uygulamanın belge yüklü olmayan tek ekranı.
 
 ### 2. Tarama sonucu
 
-![Tarama sonucu](./docs/screenshots/02-sonuc.png)
+![Tarama sonucu](./docs/screenshots/02-scan-result.png)
 
 Tarama kaydedildiğinde sonuç kartı ekranın üstüne gelir.
 
@@ -72,16 +72,16 @@ Tarama kaydedildiğinde sonuç kartı ekranın üstüne gelir.
 - **PDF bloğu** — üretilen dosya (`Document 27 October 2026 03:10.pdf`), sayfa sayısı ve **View PDF**.
 - **ACTIONS** — dört yol, her birinin altında hedefi yazılı:
   - **Share PDF** → *Choose app*
-  - **Save PDF** → *Downloads*
+  - **Save PDF** → *Documents/HeraScan*
   - **Share Image** → *First page*
   - **View PDF** → *In-app*
-- **Read All Pages** — *Extract text with OCR · AI-powered*, bütün sayfalar için çevrimdışı OCR geçişi.
+- **Read Text** — *Extract text with OCR · AI-powered*, bütün sayfalar için çevrimdışı OCR geçişi.
 
 Her eylem nereye gittiğini kendi altında yazar; dokunmadan önce tahmin etmek gerekmez.
 
 ### 3. Kırpma ve döndürme
 
-![Kırpma ve döndürme](./docs/screenshots/03-kirpma.png)
+![Kırpma ve döndürme](./docs/screenshots/03-crop-rotate.png)
 
 Sayfalar kesinleşmeden önceki ML Kit inceleme adımı.
 
@@ -95,7 +95,7 @@ Yakalama bilerek ML Kit'e bırakılmıştır: kenar algılama ve perspektif düz
 
 ### 4. Belgeyi adlandır
 
-![Belgeyi adlandır](./docs/screenshots/04-isimlendir.png)
+![Belgeyi adlandır](./docs/screenshots/04-name-document.png)
 
 Taramayı kapatan adlandırma diyaloğu.
 
@@ -108,7 +108,7 @@ Ad hem PDF dosya adı hem geçmiş kaydı olur; bu yüzden varsayılan rastgele 
 
 ### 5. Geçmiş
 
-![Geçmiş](./docs/screenshots/05-gecmis.png)
+![Geçmiş](./docs/screenshots/05-history.png)
 
 Belgeler oluştuktan sonraki ana ekran.
 
@@ -120,7 +120,7 @@ Geçmiş bir Room tablosu ve Paging 3'tür; uzun bir arşiv bile kaydırırken u
 
 ### 6. PDF görüntüleyici
 
-![PDF görüntüleyici](./docs/screenshots/06-pdf-goruntuleyici.png)
+![PDF görüntüleyici](./docs/screenshots/06-pdf-viewer.png)
 
 Sonuç kartındaki **View PDF** veya bir geçmiş kaydından açılan uygulama içi okuyucu.
 
@@ -136,7 +136,7 @@ Paylaşmadan önce PDF'in okunabildiğini kontrol etmenin en hızlı yolu burada
 
 HeraScan APK olarak dağıtılır:
 
-1. `HeraScan-0.5.8.apk` dosyasını cihaza kopyala.
+1. `HeraScan-0.5.11.apk` dosyasını cihaza kopyala.
 2. İstenirse o kaynaktan kuruluma izin ver.
 3. Uygulamayı aç, ilk taramada kamera iznini ver.
 
@@ -147,7 +147,7 @@ Android 8.0 (API 26) veya üzeri; Android SDK 34 ve Android 15 üzerinde derleni
 | İzin | Neden |
 |---|---|
 | **Kamera** | ML Kit tarayıcı arayüzü üzerinden sayfa yakalama |
-| **Depolama / MediaStore** | PDF'i Downloads'a, OCR metnini `Documents/HeraScan` altına yazma |
+| **Depolama / MediaStore** | PDF ve OCR metnini `Documents/HeraScan` altına yazma |
 | **İnternet** | yalnız ML Kit modelinin bir kerelik indirilmesi; sonrasında tarama ve OCR çevrimdışı |
 
 Hesap yok, analitik yok, çökme raporu yok.
@@ -156,12 +156,12 @@ Hesap yok, analitik yok, çökme raporu yok.
 
 | Ürün | Konum |
 |---|---|
-| PDF | Downloads (MediaStore üzerinden) |
+| PDF | `Documents/HeraScan` (MediaStore üzerinden) |
 | OCR metni | `Documents/HeraScan` |
 | Geçmiş ve küçük resimler | uygulama içi Room veritabanı |
 | Tarama önbelleği | uygulama önbelleği, 24 saat sonra temizlenir |
 
-Geçmiş kaydını silmek uygulamanın kaydını kaldırır; Downloads veya Documents'a yazılmış dosyalar yerinde kalır.
+Geçmiş kaydını silmek uygulamanın kaydını kaldırır; Documents'a yazılmış dosyalar yerinde kalır.
 
 ## Kaynaktan derleme
 

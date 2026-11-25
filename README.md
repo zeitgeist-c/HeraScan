@@ -8,7 +8,7 @@ HeraScan is a single-activity Jetpack Compose app that turns a camera pass or a 
 
 Every step — scanning, OCR, history — runs on the device. There is no account, no upload, no server.
 
-![HeraScan · empty home](./docs/screenshots/01-ana-ekran.png)
+![HeraScan · empty home](./docs/screenshots/01-home.png)
 
 ---
 
@@ -39,7 +39,7 @@ Every step — scanning, OCR, history — runs on the device. There is no accoun
 | **Outputs** | JPEG per page and a combined PDF |
 | **Offline OCR** | on-device ML Kit Text Recognition (Latin), result in a bottom sheet |
 | **PDF viewer** | in-app paging through the scanned PDF |
-| **Save and share** | PDF to Downloads, OCR text to `Documents/HeraScan`, share via FileProvider |
+| **Save and share** | PDF and OCR text to `Documents/HeraScan`, share via FileProvider |
 | **History** | Room database with Paging 3, page size 20; reopen, rename, delete |
 | **Smart naming** | rename dialog with a date-prefixed default name in Turkish format |
 | **Cache hygiene** | scan cache older than 24 hours is cleaned automatically |
@@ -52,11 +52,11 @@ Every step — scanning, OCR, history — runs on the device. There is no accoun
 
 ### 1. Home
 
-![Home](./docs/screenshots/01-ana-ekran.png)
+![Home](./docs/screenshots/01-home.png)
 
 The empty state, and the app's only screen with no document loaded.
 
-- **Header** — logo, `HeraScan`, and the running version (`v0.5.8`).
+- **Header** — logo, `HeraScan`, and the running version (`v0.5.11`).
 - **Empty illustration** — *"No Documents Scanned Yet"*, then the hint *"Take a photo or pick from gallery · Up to 50 pages"*.
 - **New Scan** — the blue action button, bottom right.
 
@@ -64,7 +64,7 @@ Tapping either the illustration or **New Scan** hands off to ML Kit's scanner. T
 
 ### 2. Scan result
 
-![Scan result](./docs/screenshots/02-sonuc.png)
+![Scan result](./docs/screenshots/02-scan-result.png)
 
 Once a scan is saved, the result card becomes the top of the screen.
 
@@ -72,16 +72,16 @@ Once a scan is saved, the result card becomes the top of the screen.
 - **PDF block** — the generated file (`Document 27 October 2026 03:10.pdf`), its page count and **View PDF**.
 - **ACTIONS** — four paths, each with the destination under it:
   - **Share PDF** → *Choose app*
-  - **Save PDF** → *Downloads*
+  - **Save PDF** → *Documents/HeraScan*
   - **Share Image** → *First page*
   - **View PDF** → *In-app*
-- **Read All Pages** — *Extract text with OCR · AI-powered*, the offline OCR pass over every page.
+- **Read Text** — *Extract text with OCR · AI-powered*, the offline OCR pass over every page.
 
 Each action names where it lands, so nothing has to be guessed before tapping.
 
 ### 3. Crop and rotate
 
-![Crop and rotate](./docs/screenshots/03-kirpma.png)
+![Crop and rotate](./docs/screenshots/03-crop-rotate.png)
 
 ML Kit's review step, before the pages are committed.
 
@@ -95,7 +95,7 @@ The capture is deliberately left to ML Kit: edge detection and perspective corre
 
 ### 4. Name the document
 
-![Name the document](./docs/screenshots/04-isimlendir.png)
+![Name the document](./docs/screenshots/04-name-document.png)
 
 The naming dialog that closes a scan.
 
@@ -108,7 +108,7 @@ The name becomes the PDF filename and the history entry, so the default is reada
 
 ### 5. History
 
-![History](./docs/screenshots/05-gecmis.png)
+![History](./docs/screenshots/05-history.png)
 
 The home screen once documents exist.
 
@@ -120,7 +120,7 @@ History is a Room table plus Paging 3, so a long archive stays cheap to scroll: 
 
 ### 6. PDF viewer
 
-![PDF viewer](./docs/screenshots/06-pdf-goruntuleyici.png)
+![PDF viewer](./docs/screenshots/06-pdf-viewer.png)
 
 The in-app reader, reached from **View PDF** on the result card or from a history entry.
 
@@ -136,7 +136,7 @@ Opening a scan here is the fastest check that the PDF is readable before sharing
 
 HeraScan ships as an APK:
 
-1. Copy `HeraScan-0.5.8.apk` to the device.
+1. Copy `HeraScan-0.5.11.apk` to the device.
 2. Allow installation from that source when prompted.
 3. Open the app and grant camera access on the first scan.
 
@@ -147,7 +147,7 @@ Android 8.0 (API 26) or newer; built and tested against Android SDK 34 on Androi
 | Permission | Why |
 |---|---|
 | **Camera** | capturing pages, through ML Kit's scanner UI |
-| **Storage / MediaStore** | writing the PDF to Downloads and OCR text to `Documents/HeraScan` |
+| **Storage / MediaStore** | writing the PDF and OCR text to `Documents/HeraScan` |
 | **Internet** | only for the one-time ML Kit model download; scanning and OCR then run offline |
 
 No account, no analytics, no crash reporting.
@@ -156,12 +156,12 @@ No account, no analytics, no crash reporting.
 
 | Artifact | Location |
 |---|---|
-| PDF | Downloads (via MediaStore) |
+| PDF | `Documents/HeraScan` (via MediaStore) |
 | OCR text | `Documents/HeraScan` |
 | History and thumbnails | app-internal Room database |
 | Scan cache | app cache, cleaned after 24 hours |
 
-Deleting a history entry removes the app's record; files already saved to Downloads or Documents stay where they are.
+Deleting a history entry removes the app's record; files already saved to Documents stay where they are.
 
 ## Build from source
 
